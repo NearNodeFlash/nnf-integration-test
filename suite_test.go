@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/NearNodeFlash/nnf-deploy/test/internal"
+	. "github.com/NearNodeFlash/nnf-integration-test/internal"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

@@ -22,7 +22,7 @@ package test
 import (
 	"fmt"
 
-	. "github.com/NearNodeFlash/nnf-deploy/test/internal"
+	. "github.com/NearNodeFlash/nnf-integration-test/internal"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
