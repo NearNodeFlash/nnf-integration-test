@@ -2,18 +2,7 @@ module github.com/NearNodeFlash/nnf-integration-test
 
 go 1.19
 
-replace (
-	github.com/HewlettPackard/dws => ../dws
-	github.com/NearNodeFlash/lustre-fs-operator => ../lustre-fs-operator
-	github.com/NearNodeFlash/nnf-dm => ../nnf-dm
-	github.com/NearNodeFlash/nnf-sos => ../nnf-sos
-)
-
 require (
-	github.com/HewlettPackard/dws v0.0.1-0.20230613201835-73abc41bd83c
-	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20230613180840-6178f2b04900
-	github.com/NearNodeFlash/nnf-dm v0.0.0-00010101000000-000000000000
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230613203338-ea5b2f78692b
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
 	go.uber.org/zap v1.24.0
@@ -24,7 +13,14 @@ require (
 )
 
 require (
+	github.com/HewlettPackard/dws v0.0.1-0.20230628183012-0f35365b2ff6
+	github.com/NearNodeFlash/lustre-fs-operator v0.0.4
+	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20230614135925-58436db83559
 	github.com/NearNodeFlash/nnf-ec v0.0.0-20230526161255-cfb2d89b35d7 // indirect
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230626175652-aa17b1c61f4b
+)
+
+require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
