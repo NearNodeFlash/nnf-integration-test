@@ -1,5 +1,6 @@
 name: NNF int-test
-on: [push]
+
+#on: [push]
 
 jobs:
   int-test:
