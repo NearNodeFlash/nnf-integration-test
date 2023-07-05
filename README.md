@@ -1,6 +1,8 @@
 # nnf-integration-test
 An NNF integration test meant to be run against a live, already-installed, rabbit system.
 
+This is meant to be used as a submodule of [nnf-deploy](https://github.com/NearNodeFlash/nnf-deploy) so that it is built against the same version of the code that has been deployed to the live rabbit system.
+
 # Testing
 
 NNF test infrastructure and individualized tests reside in the [/internal](./internal/) directory. Tests are expected to run against a fully deployed cluster reachable via your current k8s configuration context. NNF test uses the [Ginkgo](https://onsi.github.io/ginkgo) test framework.
