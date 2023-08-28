@@ -27,6 +27,7 @@ type TOptions struct {
 	expectError       *TExpectError
 	storageProfile    *TStorageProfile
 	persistentLustre  *TPersistentLustre
+	mgsPool           *TMgsPool
 	globalLustre      *TGlobalLustre
 	cleanupPersistent *TCleanupPersistentInstance
 	duplicate         *TDuplicate
@@ -67,7 +68,9 @@ func (t *T) ShouldTeardown() bool {
 }
 
 type TStorageProfile struct {
-	name string
+	name          string
+	externalMgs   string
+	standaloneMgt string
 }
 
 // WithStorageProfile will manage a storage profile of of name 'name'
@@ -85,6 +88,20 @@ func (t *T) WithStorageProfile() *T {
 	}
 
 	panic(fmt.Sprintf("profile argument required but not found in test '%s'", t.Name()))
+}
+
+func (t *T) WithStorageProfileStandaloneMGT(standaloneMGT string) *T {
+	t.WithStorageProfile()
+	t.options.storageProfile.standaloneMgt = standaloneMGT
+
+	return t.WithLabels("standaloneMGT")
+}
+
+func (t *T) WithStorageProfileExternalMGS(externalMGS string) *T {
+	t.WithStorageProfile()
+	t.options.storageProfile.externalMgs = externalMGS
+
+	return t.WithLabels("externalMGS")
 }
 
 type TPersistentLustre struct {
@@ -124,6 +141,16 @@ func (t *T) AndCleanupPersistentInstance() *T {
 	}
 
 	panic(fmt.Sprintf("create_persistent directive required but not found in test '%s'", t.Name()))
+}
+
+type TMgsPool struct {
+	name  string
+	count int
+}
+
+func (t *T) WithMgsPool(name string, count int) *T {
+	t.options.mgsPool = &TMgsPool{name: name, count: count}
+	return t.WithLabels("mgsPool")
 }
 
 type TGlobalLustre struct {
@@ -173,6 +200,8 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
 
 	if o.storageProfile != nil {
+		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
+
 		// Clone the placeholder profile
 		placeholder := &nnfv1alpha1.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
@@ -192,6 +221,15 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		placeholder.Data.DeepCopyInto(&profile.Data)
 		profile.Data.Default = false
+		if o.storageProfile.externalMgs != "" {
+			profile.Data.LustreStorage.CombinedMGTMDT = false
+			profile.Data.LustreStorage.ExternalMGS = o.storageProfile.externalMgs
+			profile.Data.LustreStorage.StandaloneMGTPoolName = ""
+		} else if o.storageProfile.standaloneMgt != "" {
+			profile.Data.LustreStorage.CombinedMGTMDT = false
+			profile.Data.LustreStorage.ExternalMGS = ""
+			profile.Data.LustreStorage.StandaloneMGTPoolName = o.storageProfile.standaloneMgt
+		}
 
 		Expect(k8sClient.Create(ctx, profile)).To(Succeed())
 	}
@@ -232,6 +270,20 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		o.persistentLustre.fsName = storage.Spec.AllocationSets[0].FileSystemName
 		o.persistentLustre.mgsNids = storage.Status.MgsNode
+	}
+
+	if o.mgsPool != nil {
+		for i := 0; i < o.mgsPool.count; i++ {
+			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-create", o.mgsPool.name, i), fmt.Sprintf("#DW create_persistent type=lustre name=%s-%d capacity=1GB profile=%s", o.mgsPool.name, i, o.mgsPool.name)).WithStorageProfileStandaloneMGT(o.mgsPool.name)
+
+			By(fmt.Sprintf("Creating persistent lustre MGS '%s'", o.mgsPool.name))
+			Expect(k8sClient.Create(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+			mgsPersistentStorage.Prepare(ctx, k8sClient)
+			mgsPersistentStorage.Execute(ctx, k8sClient)
+			mgsPersistentStorage.Cleanup(ctx, k8sClient)
+
+			Expect(k8sClient.Delete(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+		}
 	}
 
 	if o.globalLustre != nil {
@@ -280,6 +332,18 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKeyFromObject(lustre), lustre)
 		}).ShouldNot(Succeed(), "lustre file system resource should delete")
+	}
+
+	if o.mgsPool != nil {
+		for i := 0; i < o.mgsPool.count; i++ {
+			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-destroy", o.mgsPool.name, i), fmt.Sprintf("#DW destroy_persistent name=%s-%d", o.mgsPool.name, i))
+
+			By(fmt.Sprintf("destroying persistent lustre MGS '%s'", o.mgsPool.name))
+			Expect(k8sClient.Create(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+			mgsPersistentStorage.Execute(ctx, k8sClient)
+			mgsPersistentStorage.Cleanup(ctx, k8sClient)
+			Expect(k8sClient.Delete(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+		}
 	}
 
 	if o.cleanupPersistent != nil {
