@@ -85,6 +85,10 @@ func MakeTest(name string, directives ...string) *T {
 	// Extract a common set of labels from the directives
 	labels := make([]string, 0)
 	for _, directive := range directives {
+		if len(directive) == 0 {
+			continue
+		}
+
 		args, err := dwdparse.BuildArgsMap(directive)
 		if err != nil {
 			panic(fmt.Sprintf("Test '%s' failed to parse provided directive '%s'", name, directive))
@@ -102,6 +106,9 @@ func MakeTest(name string, directives ...string) *T {
 		directives: directives,
 		labels:     labels,
 		decorators: make([]interface{}, 0),
+	}
+	if len(directives) == 0 {
+		t.directives = []string{}
 	}
 
 	t.workflow = &dwsv1alpha2.Workflow{

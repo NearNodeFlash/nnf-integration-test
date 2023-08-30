@@ -13,11 +13,11 @@ require (
 )
 
 require (
-	github.com/HewlettPackard/dws v0.0.1-0.20230628183012-0f35365b2ff6
+	github.com/HewlettPackard/dws v0.0.1-0.20230815174614-998c6ad6bd1d
 	github.com/NearNodeFlash/lustre-fs-operator v0.0.4
 	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20230614135925-58436db83559
 	github.com/NearNodeFlash/nnf-ec v0.0.0-20230526161255-cfb2d89b35d7 // indirect
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230626175652-aa17b1c61f4b
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230830161136-f3eb87a996e3
 )
 
 require (

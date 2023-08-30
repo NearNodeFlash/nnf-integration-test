@@ -124,6 +124,11 @@ var tests = []*T{
 		WithPersistentLustre("containers-persistent-storage-mpi").
 		WithPermissions(1050, 1051).
 		Pending(),
+
+	// External MGS
+	MakeTest("Lustre with MGS pool",
+		"#DW jobdw name=external-mgs-pool type=lustre capacity=100GB profile=example-external-mgs").
+		WithMgsPool("lustre-mgs-pool", 1).WithStorageProfileExternalMGS("pool:lustre-mgs-pool"),
 }
 
 var _ = Describe("NNF Integration Test", func() {
