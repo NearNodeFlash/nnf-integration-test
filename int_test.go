@@ -26,6 +26,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.openly.dev/pointy"
 
 	dwsv1alpha2 "github.com/HewlettPackard/dws/api/v1alpha2"
 )
@@ -78,25 +79,79 @@ var tests = []*T{
 		"#DW copy_in source=/lus/global/test.in destination=$DW_JOB_xfs-data-movement/",    // TODO: Create a file "test.in" in the global lustre directory
 		"#DW copy_out source=$DW_JOB_xfs-data-movement/test.out destination=/lus/global/"). // TODO: Validate file "test.out" in the global lustre directory
 		WithPersistentLustre("xfs-data-movement-lustre-instance").                          // Manage a persistent Lustre instance as part of the test
-		WithGlobalLustreFromPersistentLustre("/lus/global").
+		WithGlobalLustreFromPersistentLustre("global", nil).
 		Serialized().
 		Pending(),
 
 	// Containers - MPI
 	MakeTest("GFS2 with MPI Containers",
 		"#DW jobdw type=gfs2 name=gfs2-with-containers-mpi capacity=100GB",
-		"#DW container name=gfs2-with-containers-mpi profile=example-mpi DW_JOB_foo_local_storage=gfs2-with-containers-mpi").
+		"#DW container name=gfs2-with-containers-mpi profile=example-mpi "+
+			"DW_JOB_foo_local_storage=gfs2-with-containers-mpi").
 		WithPermissions(1050, 1051).WithLabels("mpi"),
 	MakeTest("Lustre with MPI Containers",
 		"#DW jobdw type=lustre name=lustre-with-containers-mpi capacity=100GB",
-		"#DW container name=lustre-with-containers-mpi profile=example-mpi DW_JOB_foo_local_storage=lustre-with-containers-mpi").
+		"#DW container name=lustre-with-containers-mpi profile=example-mpi "+
+			"DW_JOB_foo_local_storage=lustre-with-containers-mpi").
 		WithPermissions(1050, 1051).WithLabels("mpi"),
+	MakeTest("GFS2 and Global Lustre with MPI Containers",
+		"#DW jobdw type=gfs2 name=gfs2-and-global-with-containers-mpi capacity=100GB",
+		"#DW container name=gfs2-and-global-with-containers-mpi profile=example-mpi "+
+			"DW_JOB_foo_local_storage=gfs2-and-global-with-containers-mpi "+
+			"DW_GLOBAL_foo_global_lustre=/lus/sawbill").
+		WithPermissions(1050, 1051).
+		WithPersistentLustre("gfs2-and-global-with-containers-mpi-sawbill").
+		WithGlobalLustreFromPersistentLustre("sawbill", []string{"default"}).
+		WithLabels("mpi", "global-lustre"),
+
+	// Containers - MPI failures
+	MakeTest("PreRun timeout on MPI containers",
+		"#DW container name=prerun-timeout-mpi profile=example-mpi-prerun-timeout").
+		WithPermissions(1050, 1051).WithLabels("mpi", "timeout").
+		WithContainerProfile("example-mpi", &ContainerProfileOptions{PrerunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
+		ExpectError(dwsv1alpha2.StatePreRun),
+	MakeTest("PostRun timeout on MPI containers",
+		"#DW container name=postrun-timeout-mpi profile=example-mpi-postrun-timeout").
+		WithPermissions(1050, 1051).WithLabels("mpi", "timeout").
+		WithContainerProfile("example-mpi-webserver", &ContainerProfileOptions{PostrunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
+		ExpectError(dwsv1alpha2.StatePostRun),
+	MakeTest("Non-zero exit on MPI containers",
+		"#DW container name=mpi-container-fail profile=example-mpi-fail-noretry").
+		WithPermissions(1050, 1051).WithLabels("mpi", "fail").
+		WithContainerProfile("example-mpi-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
+		ExpectError(dwsv1alpha2.StatePostRun),
 
 	// Containers - Non-MPI
 	MakeTest("GFS2 with Containers",
 		"#DW jobdw type=gfs2 name=gfs2-with-containers capacity=100GB",
 		"#DW container name=gfs2-with-containers profile=example-success DW_JOB_foo_local_storage=gfs2-with-containers").
-		WithPermissions(1000, 2000).WithLabels("non-mpi"),
+		WithPermissions(1050, 1051).WithLabels("non-mpi"),
+	MakeTest("GFS2 and Global Lustre with Containers",
+		"#DW jobdw type=gfs2 name=gfs2-and-global-with-containers capacity=100GB",
+		"#DW container name=gfs2-and-global-with-containers profile=example-success "+
+			"DW_JOB_foo_local_storage=gfs2-and-global-with-containers "+
+			"DW_GLOBAL_foo_global_lustre=/lus/cherokee").
+		WithPermissions(1050, 1051).
+		WithPersistentLustre("gfs2-and-global-with-containers-cherokee").
+		WithGlobalLustreFromPersistentLustre("cherokee", []string{"default"}).
+		WithLabels("non-mpi", "global-lustre"),
+
+	// Containers - Non-MPI failures
+	MakeTest("PreRun timeout on non-MPI containers",
+		"#DW container name=prerun-timeout profile=example-prerun-timeout").
+		WithPermissions(1050, 1051).WithLabels("non-mpi", "timeout").
+		WithContainerProfile("example-forever", &ContainerProfileOptions{PrerunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
+		ExpectError(dwsv1alpha2.StatePreRun),
+	MakeTest("PostRun timeout on non-MPI containers",
+		"#DW container name=postrun-timeout profile=example-postrun-timeout").
+		WithPermissions(1050, 1051).WithLabels("non-mpi", "timeout").
+		WithContainerProfile("example-forever", &ContainerProfileOptions{PostrunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
+		ExpectError(dwsv1alpha2.StatePostRun),
+	MakeTest("Non-zero exit on non-MPI containers",
+		"#DW container name=container-fail profile=example-fail-noretry").
+		WithPermissions(1050, 1051).WithLabels("non-mpi", "fail").
+		WithContainerProfile("example-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
+		ExpectError(dwsv1alpha2.StatePostRun),
 
 	// Containers - Unsupported Filesystems. These should fail as xfs/raw filesystems are not supported for containers.
 	MakeTest("XFS with Containers",
