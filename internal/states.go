@@ -22,6 +22,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"runtime"
 	"strings"
@@ -123,13 +124,32 @@ func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 			// like XFS and GFS2, we can use any Rabbit. But for Lustre, we have to watch where we land the MDT/MGT, and ensure those are
 			// exclusive to the Rabbit nodes.
 			findStorageServers := func(set *dwsv1alpha2.StorageAllocationSet) []dwsv1alpha2.ServersSpecStorage {
-				storages := make([]dwsv1alpha2.ServersSpecStorage, len(systemConfig.Spec.StorageNodes))
-				for index, node := range systemConfig.Spec.StorageNodes {
-					storages[index].Name = node.Name
-					storages[index].AllocationCount = len(node.ComputesAccess)
+				switch set.AllocationStrategy {
+				case dwsv1alpha2.AllocatePerCompute:
+					// Make one allocation per compute node
+					storages := make([]dwsv1alpha2.ServersSpecStorage, len(systemConfig.Spec.StorageNodes))
+					for index, node := range systemConfig.Spec.StorageNodes {
+						storages[index].Name = node.Name
+						storages[index].AllocationCount = len(node.ComputesAccess)
+					}
+					return storages
+				case dwsv1alpha2.AllocateAcrossServers:
+					// Make one allocation per Rabbit
+					storages := make([]dwsv1alpha2.ServersSpecStorage, len(systemConfig.Spec.StorageNodes))
+					for index, node := range systemConfig.Spec.StorageNodes {
+						storages[index].Name = node.Name
+						storages[index].AllocationCount = 1
+					}
+					return storages
+				case dwsv1alpha2.AllocateSingleServer:
+					// Make one allocation total
+					storages := make([]dwsv1alpha2.ServersSpecStorage, 1)
+					storages[0].Name = systemConfig.Spec.StorageNodes[rand.Intn(len(systemConfig.Spec.StorageNodes))].Name
+					storages[0].AllocationCount = 1
+					return storages
 				}
 
-				return storages
+				return []dwsv1alpha2.ServersSpecStorage{}
 			}
 
 			servers.Spec.AllocationSets = make([]dwsv1alpha2.ServersSpecAllocationSet, len(directiveBreakdown.Status.Storage.AllocationSets))
