@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
+	go.openly.dev/pointy v1.3.0
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
@@ -13,11 +14,11 @@ require (
 )
 
 require (
-	github.com/HewlettPackard/dws v0.0.1-0.20230628183012-0f35365b2ff6
-	github.com/NearNodeFlash/lustre-fs-operator v0.0.4
-	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20230614135925-58436db83559
+	github.com/HewlettPackard/dws v0.0.1-0.20230815174614-998c6ad6bd1d
+	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20230706151302-f68d7e6dcb4f
+	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20230823203603-42560b097c82
 	github.com/NearNodeFlash/nnf-ec v0.0.0-20230526161255-cfb2d89b35d7 // indirect
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230626175652-aa17b1c61f4b
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230907145800-2ab465a12c1a
 )
 
 require (

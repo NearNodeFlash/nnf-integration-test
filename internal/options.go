@@ -26,7 +26,9 @@ type TOptions struct {
 	stopAfter         *TStopAfter
 	expectError       *TExpectError
 	storageProfile    *TStorageProfile
+	containerProfile  *TContainerProfile
 	persistentLustre  *TPersistentLustre
+	mgsPool           *TMgsPool
 	globalLustre      *TGlobalLustre
 	cleanupPersistent *TCleanupPersistentInstance
 	duplicate         *TDuplicate
@@ -34,7 +36,7 @@ type TOptions struct {
 
 // Complex options that can not be duplicated
 func (o *TOptions) hasComplexOptions() bool {
-	return o.storageProfile != nil || o.persistentLustre != nil || o.globalLustre != nil || o.cleanupPersistent != nil
+	return o.storageProfile != nil || o.containerProfile != nil || o.persistentLustre != nil || o.globalLustre != nil || o.cleanupPersistent != nil
 }
 
 type TStopAfter struct {
@@ -55,7 +57,7 @@ type TExpectError struct {
 func (t *T) ExpectError(state dwsv1alpha2.WorkflowState) *T {
 	t.options.expectError = &TExpectError{state: state}
 	t.options.stopAfter = &TStopAfter{state: state}
-	return t
+	return t.WithLabels("error")
 }
 
 func (t *T) ShouldTeardown() bool {
@@ -67,7 +69,9 @@ func (t *T) ShouldTeardown() bool {
 }
 
 type TStorageProfile struct {
-	name string
+	name          string
+	externalMgs   string
+	standaloneMgt string
 }
 
 // WithStorageProfile will manage a storage profile of of name 'name'
@@ -80,6 +84,48 @@ func (t *T) WithStorageProfile() *T {
 			if name, found := args["profile"]; found {
 				t.options.storageProfile = &TStorageProfile{name: name}
 				return t.WithLabels("storage_profile")
+			}
+		}
+	}
+
+	panic(fmt.Sprintf("profile argument required but not found in test '%s'", t.Name()))
+}
+
+func (t *T) WithStorageProfileStandaloneMGT(standaloneMGT string) *T {
+	t.WithStorageProfile()
+	t.options.storageProfile.standaloneMgt = standaloneMGT
+
+	return t.WithLabels("standaloneMGT")
+}
+
+func (t *T) WithStorageProfileExternalMGS(externalMGS string) *T {
+	t.WithStorageProfile()
+	t.options.storageProfile.externalMgs = externalMGS
+
+	return t.WithLabels("externalMGS")
+}
+
+type TContainerProfile struct {
+	name    string
+	base    string
+	options *ContainerProfileOptions
+}
+
+type ContainerProfileOptions struct {
+	PrerunTimeoutSeconds  *int
+	PostrunTimeoutSeconds *int
+	RetryLimit            *int
+	NoStorage             bool // make any storages in the profile optional
+}
+
+func (t *T) WithContainerProfile(base string, options *ContainerProfileOptions) *T {
+	for _, directive := range t.directives {
+		args, _ := dwdparse.BuildArgsMap(directive)
+
+		if args["command"] == "container" {
+			if profile, found := args["profile"]; found {
+				t.options.containerProfile = &TContainerProfile{name: profile, base: base, options: options}
+				return t.WithLabels("container_profile")
 			}
 		}
 	}
@@ -126,10 +172,21 @@ func (t *T) AndCleanupPersistentInstance() *T {
 	panic(fmt.Sprintf("create_persistent directive required but not found in test '%s'", t.Name()))
 }
 
+type TMgsPool struct {
+	name  string
+	count int
+}
+
+func (t *T) WithMgsPool(name string, count int) *T {
+	t.options.mgsPool = &TMgsPool{name: name, count: count}
+	return t.WithLabels("mgsPool")
+}
+
 type TGlobalLustre struct {
-	fsName    string
-	mgsNids   string
-	mountRoot string
+	name       string
+	mgsNids    string
+	mountRoot  string
+	namespaces map[string]lusv1alpha1.LustreFileSystemNamespaceSpec
 
 	in  string // Create this file prior copy_in
 	out string // Expect this file after copy_out
@@ -142,14 +199,25 @@ func (t *T) WithGlobalLustre(mountRoot string, fsName string, mgsNids string) {
 }
 
 // WithGlobalLustreFromPersistentLustre will create a global lustre file system from a persistent lustre file system
-func (t *T) WithGlobalLustreFromPersistentLustre(mountRoot string) *T {
+// namespaces can be added in addition to the default `nnf-dm-system`
+func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []string) *T {
 	if t.options.persistentLustre == nil {
 		panic("Test option requires persistent lustre")
 	}
 
+	// Convert the slice of namespaces to LustreFilsystemNamespaceSpec map and add `nnf-dm-system` by default.
+	lustreNamespaces := make(map[string]lusv1alpha1.LustreFileSystemNamespaceSpec)
+	for _, ns := range append([]string{"nnf-dm-system"}, namespaces...) {
+		lustreNamespaces[ns] = lusv1alpha1.LustreFileSystemNamespaceSpec{
+			Modes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+		}
+	}
+
 	t.options.globalLustre = &TGlobalLustre{
+		name:       "global-" + name,
 		persistent: t.options.persistentLustre,
-		mountRoot:  mountRoot,
+		mountRoot:  "/lus/" + name,
+		namespaces: lustreNamespaces,
 	}
 
 	return t.WithLabels("global_lustre")
@@ -173,6 +241,8 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
 
 	if o.storageProfile != nil {
+		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
+
 		// Clone the placeholder profile
 		placeholder := &nnfv1alpha1.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
@@ -192,6 +262,59 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		placeholder.Data.DeepCopyInto(&profile.Data)
 		profile.Data.Default = false
+		if o.storageProfile.externalMgs != "" {
+			profile.Data.LustreStorage.CombinedMGTMDT = false
+			profile.Data.LustreStorage.ExternalMGS = o.storageProfile.externalMgs
+			profile.Data.LustreStorage.StandaloneMGTPoolName = ""
+		} else if o.storageProfile.standaloneMgt != "" {
+			profile.Data.LustreStorage.CombinedMGTMDT = false
+			profile.Data.LustreStorage.ExternalMGS = ""
+			profile.Data.LustreStorage.StandaloneMGTPoolName = o.storageProfile.standaloneMgt
+		}
+
+		Expect(k8sClient.Create(ctx, profile)).To(Succeed())
+	}
+
+	if o.containerProfile != nil {
+		// Clone the provided base profile
+		baseProfile := &nnfv1alpha1.NnfContainerProfile{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      o.containerProfile.base,
+				Namespace: "nnf-system",
+			},
+		}
+
+		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(baseProfile), baseProfile)).To(Succeed())
+
+		profile := &nnfv1alpha1.NnfContainerProfile{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      o.containerProfile.name,
+				Namespace: "nnf-system",
+			},
+		}
+
+		baseProfile.Data.DeepCopyInto(&profile.Data)
+
+		// Override options
+		if o.containerProfile.options != nil {
+			opt := o.containerProfile.options
+			if opt.PrerunTimeoutSeconds != nil {
+				profile.Data.PreRunTimeoutSeconds = int64(*opt.PrerunTimeoutSeconds)
+			}
+			if opt.PostrunTimeoutSeconds != nil {
+				profile.Data.PostRunTimeoutSeconds = int64(*opt.PostrunTimeoutSeconds)
+			}
+			if opt.RetryLimit != nil {
+				profile.Data.RetryLimit = int32(*opt.RetryLimit)
+			}
+			if opt.NoStorage {
+				for i, _ := range profile.Data.Storages {
+					storage := &profile.Data.Storages[i]
+					storage.Optional = true
+				}
+			}
+
+		}
 
 		Expect(k8sClient.Create(ctx, profile)).To(Succeed())
 	}
@@ -234,17 +357,32 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		o.persistentLustre.mgsNids = storage.Status.MgsNode
 	}
 
+	if o.mgsPool != nil {
+		for i := 0; i < o.mgsPool.count; i++ {
+			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-create", o.mgsPool.name, i), fmt.Sprintf("#DW create_persistent type=lustre name=%s-%d capacity=1GB profile=%s", o.mgsPool.name, i, o.mgsPool.name)).WithStorageProfileStandaloneMGT(o.mgsPool.name)
+
+			By(fmt.Sprintf("Creating persistent lustre MGS '%s'", o.mgsPool.name))
+			Expect(k8sClient.Create(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+			mgsPersistentStorage.Prepare(ctx, k8sClient)
+			mgsPersistentStorage.Execute(ctx, k8sClient)
+			mgsPersistentStorage.Cleanup(ctx, k8sClient)
+
+			Expect(k8sClient.Delete(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+		}
+	}
+
 	if o.globalLustre != nil {
 
 		lustre := &lusv1alpha1.LustreFileSystem{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "global",
+				Name:      o.globalLustre.name,
 				Namespace: corev1.NamespaceDefault,
 			},
 			Spec: lusv1alpha1.LustreFileSystemSpec{
-				Name:      o.globalLustre.fsName,
-				MgsNids:   o.globalLustre.mgsNids,
-				MountRoot: o.globalLustre.mountRoot,
+				Name:       o.globalLustre.name,
+				MgsNids:    o.globalLustre.mgsNids,
+				MountRoot:  o.globalLustre.mountRoot,
+				Namespaces: o.globalLustre.namespaces,
 			},
 		}
 
@@ -255,7 +393,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 			panic("reference to an existing global lustre file system is not yet implemented")
 		}
 
-		By(fmt.Sprintf("Creating a global lustre file system '%s'", client.ObjectKeyFromObject(lustre)))
+		By(fmt.Sprintf("Creating a global lustre file system '%s' @ '%s'", client.ObjectKeyFromObject(lustre), lustre.Spec.MountRoot))
 		Expect(k8sClient.Create(ctx, lustre)).To(Succeed())
 	}
 
@@ -269,10 +407,11 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
 
 	if o.globalLustre != nil {
+		By(fmt.Sprintf("Deleting global lustre '%s'", o.globalLustre.name))
 		lustre := &lusv1alpha1.LustreFileSystem{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "global",
-				Namespace: "nnf-dm-system",
+				Name:      o.globalLustre.name,
+				Namespace: corev1.NamespaceDefault,
 			},
 		}
 
@@ -282,8 +421,21 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}).ShouldNot(Succeed(), "lustre file system resource should delete")
 	}
 
+	if o.mgsPool != nil {
+		for i := 0; i < o.mgsPool.count; i++ {
+			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-destroy", o.mgsPool.name, i), fmt.Sprintf("#DW destroy_persistent name=%s-%d", o.mgsPool.name, i))
+
+			By(fmt.Sprintf("destroying persistent lustre MGS '%s'", o.mgsPool.name))
+			Expect(k8sClient.Create(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+			mgsPersistentStorage.Execute(ctx, k8sClient)
+			mgsPersistentStorage.Cleanup(ctx, k8sClient)
+			Expect(k8sClient.Delete(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+		}
+	}
+
 	if o.cleanupPersistent != nil {
 		name := o.cleanupPersistent.name
+		By(fmt.Sprintf("Destroying persistent filesystem '%s'", name))
 
 		test := MakeTest(name+"-destroy", fmt.Sprintf("#DW destroy_persistent name=%s", name))
 		Expect(k8sClient.Create(ctx, test.Workflow())).To(Succeed())
@@ -292,6 +444,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	if o.persistentLustre != nil {
+		By(fmt.Sprintf("Deleting persistent lustre instance '%s'", o.persistentLustre.name))
 
 		// Destroy the persistent lustre instance we previously created
 		Expect(k8sClient.Create(ctx, o.persistentLustre.destroy.Workflow())).To(Succeed())
@@ -302,10 +455,24 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	if t.options.storageProfile != nil {
+		By(fmt.Sprintf("Deleting storage profile '%s'", o.storageProfile.name))
 
 		profile := &nnfv1alpha1.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.storageProfile.name,
+				Namespace: "nnf-system",
+			},
+		}
+
+		Expect(k8sClient.Delete(ctx, profile)).To(Succeed())
+	}
+
+	if t.options.containerProfile != nil {
+		By(fmt.Sprintf("Deleting container profile '%s'", o.containerProfile.name))
+
+		profile := &nnfv1alpha1.NnfContainerProfile{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      o.containerProfile.name,
 				Namespace: "nnf-system",
 			},
 		}
