@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"go.openly.dev/pointy"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
@@ -299,10 +300,10 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		if o.containerProfile.options != nil {
 			opt := o.containerProfile.options
 			if opt.PrerunTimeoutSeconds != nil {
-				profile.Data.PreRunTimeoutSeconds = int64(*opt.PrerunTimeoutSeconds)
+				profile.Data.PreRunTimeoutSeconds = pointy.Int64(int64(*opt.PrerunTimeoutSeconds))
 			}
 			if opt.PostrunTimeoutSeconds != nil {
-				profile.Data.PostRunTimeoutSeconds = int64(*opt.PostrunTimeoutSeconds)
+				profile.Data.PostRunTimeoutSeconds = pointy.Int64(int64(*opt.PostrunTimeoutSeconds))
 			}
 			if opt.RetryLimit != nil {
 				profile.Data.RetryLimit = int32(*opt.RetryLimit)
