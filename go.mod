@@ -3,6 +3,7 @@ module github.com/NearNodeFlash/nnf-integration-test
 go 1.19
 
 require (
+	github.com/DataWorkflowServices/dws v0.0.1-0.20230913193551-2ee6df5c8f3d
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
 	go.openly.dev/pointy v1.3.0
@@ -14,11 +15,10 @@ require (
 )
 
 require (
-	github.com/HewlettPackard/dws v0.0.1-0.20230815174614-998c6ad6bd1d
-	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20230706151302-f68d7e6dcb4f
-	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20230823203603-42560b097c82
+	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20230913194514-b3de4661519a
+	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20230913201006-59f7305182a9
 	github.com/NearNodeFlash/nnf-ec v0.0.0-20230526161255-cfb2d89b35d7 // indirect
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230907145800-2ab465a12c1a
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20230913195636-cba968acdab5
 )
 
 require (
@@ -41,8 +41,8 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20221103000818-d260c55eee4c // indirect
-	github.com/google/uuid v1.3.0 // indirect
-	github.com/imdario/mergo v0.3.13 // indirect
+	github.com/google/uuid v1.3.1 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kubeflow/common v0.4.6 // indirect
@@ -60,17 +60,17 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.7.0 // indirect
+	golang.org/x/tools v0.10.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.8-0.20221117013220-504804fb50de // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
