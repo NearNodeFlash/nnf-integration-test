@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.openly.dev/pointy"
 
-	dwsv1alpha2 "github.com/HewlettPackard/dws/api/v1alpha2"
+	dwsv1alpha2 "github.com/DataWorkflowServices/dws/api/v1alpha2"
 )
 
 var tests = []*T{
