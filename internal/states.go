@@ -192,11 +192,6 @@ func (t *T) teardown(ctx context.Context, k8sClient client.Client, workflow *dws
 	t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha2.StateTeardown)
 }
 
-// func DataIn...
-// func PreRun...
-// func PostRun...
-// func DataOut...
-
 func (t *T) AdvanceStateAndWaitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow, state dwsv1alpha2.WorkflowState) {
 	By(fmt.Sprintf("Advances to %s State", state))
 
@@ -227,11 +222,17 @@ func waitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		)
 	}
 
+	// Setup can sometimes take longer than 60s when using lustre, so use a larger timeout
+	timeout := time.Minute
+	if state == dwsv1alpha2.StateSetup {
+		timeout = 5 * time.Minute
+	}
+
 	Eventually(func() dwsv1alpha2.WorkflowStatus {
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(workflow), workflow)).Should(Succeed())
 		return workflow.Status
 	}).
-		WithTimeout(time.Minute).
+		WithTimeout(timeout).
 		WithPolling(time.Second).
 		Should(achieveState(state), fmt.Sprintf("achieve state '%s'", state))
 }

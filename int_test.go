@@ -50,8 +50,8 @@ var tests = []*T{
 	//   ),
 
 	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").WithLabels(Simple),
-	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=1TB").WithLabels(Simple).Pending(),
-	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=1TB").WithLabels(Simple).Pending(),
+	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=1TB").WithLabels(Simple),
+	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=1TB").WithLabels(Simple),
 
 	DuplicateTest(
 		MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").Pending(), // Will fail for Setup() exceeding time limit; needs investigation
@@ -64,8 +64,7 @@ var tests = []*T{
 		WithStorageProfile(),
 	MakeTest("GFS2 with Storage Profile",
 		"#DW jobdw type=gfs2 name=gfs2-storage-profile capacity=1TB profile=my-gfs2-storage-profile").
-		WithStorageProfile().
-		Pending(),
+		WithStorageProfile(),
 
 	// Persistent
 	MakeTest("Persistent Lustre",
@@ -164,21 +163,20 @@ var tests = []*T{
 		ExpectError(dwsv1alpha2.StateProposal).WithLabels("unsupported-fs"),
 
 	// Containers - Multiple Storages
-	// TODO: The timing on these needs some work, hence Pending()
 	MakeTest("GFS2 and Lustre with Containers",
 		"#DW jobdw name=containers-local-storage type=gfs2 capacity=100GB",
 		"#DW persistentdw name=containers-persistent-storage",
 		"#DW container name=gfs2-lustre-with-containers profile=example-success DW_JOB_foo_local_storage=containers-local-storage DW_PERSISTENT_foo_persistent_storage=containers-persistent-storage").
 		WithPersistentLustre("containers-persistent-storage").
 		WithPermissions(1050, 1051).
-		Pending(),
+		WithLabels("multi-storage"),
 	MakeTest("GFS2 and Lustre with Containers MPI",
 		"#DW jobdw name=containers-local-storage-mpi type=gfs2 capacity=100GB",
 		"#DW persistentdw name=containers-persistent-storage-mpi",
 		"#DW container name=gfs2-lustre-with-containers-mpi profile=example-mpi DW_JOB_foo_local_storage=containers-local-storage-mpi DW_PERSISTENT_foo_persistent_storage=containers-persistent-storage-mpi").
 		WithPersistentLustre("containers-persistent-storage-mpi").
 		WithPermissions(1050, 1051).
-		Pending(),
+		WithLabels("multi-storage"),
 
 	// External MGS
 	MakeTest("Lustre with MGS pool",
