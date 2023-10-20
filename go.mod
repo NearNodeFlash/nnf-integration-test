@@ -2,6 +2,14 @@ module github.com/NearNodeFlash/nnf-integration-test
 
 go 1.19
 
+replace github.com/NearNodeFlash/lustre-fs-operator => ../lustre-fs-operator
+
+replace github.com/DataWorkflowServices/dws => ../dws
+
+replace github.com/NearNodeFlash/nnf-sos => ../nnf-sos
+
+replace github.com/NearNodeFlash/nnf-dm => ../nnf-dm
+
 require (
 	github.com/DataWorkflowServices/dws v0.0.1-0.20231010162938-b6d65b00cad6
 	github.com/onsi/ginkgo/v2 v2.11.0
