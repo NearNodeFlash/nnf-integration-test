@@ -11,4 +11,3 @@ vet:
 .PHONY: int-test
 int-test:
 	ginkgo run -p --vv ./...
-
