@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,6 +34,7 @@ type TOptions struct {
 	globalLustre      *TGlobalLustre
 	cleanupPersistent *TCleanupPersistentInstance
 	duplicate         *TDuplicate
+	hardwareRequired  bool
 }
 
 // Complex options that can not be duplicated
@@ -221,6 +223,21 @@ func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []strin
 		namespaces: lustreNamespaces,
 	}
 
+	// For copy_in/copy_out, pull the source/destination paths and add them to global lustre
+	for _, directive := range t.directives {
+		args, _ := dwdparse.BuildArgsMap(directive)
+
+		if args["command"] == "copy_in" {
+			if path, found := args["source"]; found {
+				t.options.globalLustre.in = path
+			}
+		} else if args["command"] == "copy_out" {
+			if path, found := args["destination"]; found {
+				t.options.globalLustre.out = path
+			}
+		}
+	}
+
 	return t.WithLabels("global_lustre")
 }
 
@@ -240,6 +257,15 @@ func (t *T) WithPermissions(userId, groupId uint32) *T {
 // Prepare a test with the programmed test options.
 func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
+
+	// Skip the test if hardware is required and the current context includes "kind"
+	if o.hardwareRequired {
+		if context, err := CurrentContext(); err == nil {
+			if strings.Contains(context, "kind") {
+				Skip("This test cannot run in kind environment")
+			}
+		}
+	}
 
 	if o.storageProfile != nil {
 		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
@@ -396,6 +422,13 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		By(fmt.Sprintf("Creating a global lustre file system '%s' @ '%s'", client.ObjectKeyFromObject(lustre), lustre.Spec.MountRoot))
 		Expect(k8sClient.Create(ctx, lustre)).To(Succeed())
+
+		// For our testing purposes, a copy_in directive assumes global lustre.
+		// With this set, the source path will be created on the global lustre
+		// filesystem
+		if len(o.globalLustre.in) > 0 {
+			SetupCopyIn(ctx, k8sClient, t, t.options)
+		}
 	}
 
 	return nil
@@ -406,6 +439,16 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 // between options are correct.
 func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
+
+	// Remove any helper pods that may have been used (e.g. copy_in, copy_out)
+	if len(t.helperPods) > 0 {
+		CleanupHelperPods(ctx, k8sClient, t)
+	}
+
+	// TODO: If a real lustre filesystem is used rather than persistent, we
+	// should fire up another helper pod to delete copy_in/copy_out files (i.e.)
+	// to.globalLustre.in/out. In the meantime, it is assumed the global lustre
+	// is torn down.
 
 	if o.globalLustre != nil {
 		By(fmt.Sprintf("Deleting global lustre '%s'", o.globalLustre.name))
