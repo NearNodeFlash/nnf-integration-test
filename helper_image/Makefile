@@ -15,7 +15,7 @@ docker-build: .version ## Build docker image with the manager.
 .PHONY: docker-push
 docker-push: VERSION ?= $(shell cat ../.version)
 docker-push: .version ## Push docker image with the manager.
-	$(CONTAINER_TOOL) _push ${IMG}:${VERSION}
+	$(CONTAINER_TOOL) push ${IMG}:${VERSION}
 
 .PHONY: kind-push
 kind-push: VERSION ?= $(shell cat ../.version)
@@ -40,8 +40,6 @@ docker-buildx: .version ## Build and push docker image for the manager for cross
 	- $(CONTAINER_TOOL) buildx rm project-v3-builder
 	rm Dockerfile.cross
 
-# Let .version be phony so that a git update to the workarea can be reflected
-# in it each time it's needed.
 .PHONY: .version
-.version: ## Uses the git-version-gen script to generate a tag version
-	../git-version-gen --fallback `git rev-parse HEAD` > ../.version
+.version:
+	make -C .. .version
