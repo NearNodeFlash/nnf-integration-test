@@ -7,8 +7,8 @@ function usage() {
     echo
     echo "Syntax: copy-out.sh FILE_IN FILE_OUT"
     echo
-    echo "examples:"
-    echo "copy-out.sh testuser/test.in testuser/test.out"
+    echo "example:"
+    echo "copy-out.sh /lus/global/testuser/test.in /lus/global/testuser/test.out"
     echo
 }
 

@@ -14,9 +14,9 @@ function usage() {
     echo "ROOT_DIR      root path directory; assume this is the global lustre"
     echo "              mount root (e.g. /lus/global)"
     echo "FILEPATH      filepath to the FILEPATH to create. This should be a"
-    echo "              path (e.g. /testuser/test.in, test.in)"
+    echo "              path (e.g. testuser/test.in, test.in)"
     echo "UID           user ID of the filepath"
-    echo "GID           groupd ID of the filepath"
+    echo "GID           group ID of the filepath"
     echo
     echo "examples:"
     echo "copy-in.sh /lus/global test.in 1050 1051"
