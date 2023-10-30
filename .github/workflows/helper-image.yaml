@@ -20,6 +20,15 @@ jobs:
         id: lowercase-repository-name
         run: echo "REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: "Set tags for main/master"
+        id: set_tags
+        run: |
+          echo "VERSION_TAG=$(./git-version-gen | grep -v UNKNOWN)" >> ${GITHUB_ENV}
+          echo "SHA_TAG=$(git rev-parse HEAD)" >> ${GITHUB_ENV}
+          echo "${GITHUB_ENV}:"
+          cat ${GITHUB_ENV}
+        shell: bash
+
       - name: "Docker metadata"
         id: meta
         uses: docker/metadata-action@v5
