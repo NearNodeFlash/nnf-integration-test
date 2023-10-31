@@ -78,6 +78,10 @@ type T struct {
 
 	// Options let you modify the test case with a variety of options and customizations
 	options TOptions
+
+	// Helper pods that run during a test to do extra work (e.g. data
+	// movement). These need to be cleaned up and tracked.
+	helperPods []*corev1.Pod
 }
 
 func MakeTest(name string, directives ...string) *T {
@@ -124,6 +128,8 @@ func MakeTest(name string, directives ...string) *T {
 		},
 	}
 
+	t.helperPods = make([]*corev1.Pod, 0)
+
 	return t
 }
 
@@ -150,6 +156,8 @@ func (t *T) WithLabels(labels ...string) *T { t.labels = append(t.labels, labels
 func (t *T) Focused() *T    { t.decorators = append(t.decorators, Focus); return t }
 func (t *T) Pending() *T    { t.decorators = append(t.decorators, Pending); return t }
 func (t *T) Serialized() *T { t.decorators = append(t.decorators, Serial); return t }
+
+func (t *T) HardwareRequired() *T { t.options.hardwareRequired = true; return t }
 
 func (t *T) Name() string { return t.name }
 

@@ -71,9 +71,7 @@ func (t *T) proposal(ctx context.Context, k8sClient client.Client, workflow *dws
 
 func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow) {
 
-	// TODO: Move this to a global variable and initialized in the test suite.
-	systemConfig := &dwsv1alpha2.SystemConfiguration{}
-	Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "default", Namespace: corev1.NamespaceDefault}, systemConfig)).To(Succeed())
+	systemConfig := GetSystemConfiguraton(ctx, k8sClient)
 
 	By("Assigns Computes")
 	{
@@ -186,6 +184,11 @@ func (t *T) postRun(ctx context.Context, k8sClient client.Client, workflow *dwsv
 
 func (t *T) dataOut(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow) {
 	t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha2.StateDataOut)
+
+	// If copy_out directive was set, verify that the copy_in file matches the copy_out file on global lustre
+	if t.options.globalLustre != nil && len(t.options.globalLustre.out) > 0 {
+		VerifyCopyOut(ctx, k8sClient, t, t.options)
+	}
 }
 
 func (t *T) teardown(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow) {

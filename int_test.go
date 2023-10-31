@@ -52,11 +52,12 @@ var tests = []*T{
 	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").WithLabels(Simple),
 	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=1TB").WithLabels(Simple),
 	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=1TB").WithLabels(Simple),
+	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=1TB").WithLabels(Simple),
 
-	DuplicateTest(
-		MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").Pending(), // Will fail for Setup() exceeding time limit; needs investigation
-		5,
-	),
+	// DuplicateTest(
+	// 	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").Pending(), // Will fail for Setup() exceeding time limit; needs investigation
+	// 	5,
+	// ),
 
 	// Storage Profiles
 	MakeTest("XFS with Storage Profile",
@@ -75,12 +76,11 @@ var tests = []*T{
 	// Data Movement
 	MakeTest("XFS with Data Movement",
 		"#DW jobdw type=xfs name=xfs-data-movement capacity=1TB",
-		"#DW copy_in source=/lus/global/test.in destination=$DW_JOB_xfs-data-movement/",    // TODO: Create a file "test.in" in the global lustre directory
-		"#DW copy_out source=$DW_JOB_xfs-data-movement/test.out destination=/lus/global/"). // TODO: Validate file "test.out" in the global lustre directory
-		WithPersistentLustre("xfs-data-movement-lustre-instance").                          // Manage a persistent Lustre instance as part of the test
-		WithGlobalLustreFromPersistentLustre("global", nil).
-		Serialized().
-		Pending(),
+		"#DW copy_in source=/lus/global/testuser/test.in destination=$DW_JOB_xfs-data-movement/",
+		"#DW copy_out source=$DW_JOB_xfs-data-movement/test.in destination=/lus/global/testuser/test.out").
+		WithPersistentLustre("xfs-data-movement-lustre-instance").
+		WithGlobalLustreFromPersistentLustre("global", []string{"default"}).
+		HardwareRequired(),
 
 	// Containers - MPI
 	MakeTest("GFS2 with MPI Containers",

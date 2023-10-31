@@ -12,3 +12,6 @@ vet:
 int-test:
 	ginkgo run -p --vv ./...
 
+.PHONY: .version
+.version: ## Uses the git-version-gen script to generate a tag version
+	./git-version-gen --fallback `git rev-parse HEAD` > .version
