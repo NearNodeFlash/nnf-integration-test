@@ -136,8 +136,12 @@ func CleanupHelperPods(ctx context.Context, k8sClient client.Client, t *T) {
 	for _, p := range t.helperPods {
 		By(fmt.Sprintf("Deleting helper pod %s", p.Name))
 		Expect(k8sClient.Delete(ctx, p)).To(Succeed())
-		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKeyFromObject(p), p)
-		}).ShouldNot(Succeed(), "helper pod should delete")
+		WaitForDeletion(ctx, k8sClient, p)
 	}
+}
+
+func WaitForDeletion(ctx context.Context, k8sClient client.Client, obj client.Object) {
+	Eventually(func(g Gomega) error {
+		return k8sClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+	}, "60s").Should(HaveOccurred(), fmt.Sprintf("object '%s' was not deleted", obj.GetName()))
 }
