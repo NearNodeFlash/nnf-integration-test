@@ -141,7 +141,7 @@ func CleanupHelperPods(ctx context.Context, k8sClient client.Client, t *T) {
 }
 
 func WaitForDeletion(ctx context.Context, k8sClient client.Client, obj client.Object) {
-	Eventually(func(g Gomega) error {
+	Eventually(func() error {
 		return k8sClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
 	}, "60s").Should(HaveOccurred(), fmt.Sprintf("object '%s' was not deleted", obj.GetName()))
 }
