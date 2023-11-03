@@ -460,9 +460,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		Expect(k8sClient.Delete(ctx, lustre)).To(Succeed())
-		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKeyFromObject(lustre), lustre)
-		}, "60s").ShouldNot(Succeed(), "lustre file system resource should delete")
+		WaitForDeletion(ctx, k8sClient, lustre)
 	}
 
 	if o.mgsPool != nil {
@@ -474,6 +472,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 			mgsPersistentStorage.Execute(ctx, k8sClient)
 			mgsPersistentStorage.Cleanup(ctx, k8sClient)
 			Expect(k8sClient.Delete(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+			WaitForDeletion(ctx, k8sClient, mgsPersistentStorage.Workflow())
 		}
 	}
 
@@ -485,6 +484,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		Expect(k8sClient.Create(ctx, test.Workflow())).To(Succeed())
 		test.Execute(ctx, k8sClient)
 		Expect(k8sClient.Delete(ctx, test.Workflow())).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, test.Workflow())
 	}
 
 	if o.persistentLustre != nil {
@@ -495,14 +495,10 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		o.persistentLustre.destroy.Execute(ctx, k8sClient)
 
 		Expect(k8sClient.Delete(ctx, o.persistentLustre.create.Workflow())).To(Succeed())
-		Eventually(func(g Gomega) error {
-			return k8sClient.Get(ctx, client.ObjectKeyFromObject(o.persistentLustre.create.Workflow()), o.persistentLustre.create.Workflow())
-		}, "30s").Should(HaveOccurred(), fmt.Sprintf("create workflow '%s' should be gone", o.persistentLustre.create.WorkflowName()))
+		WaitForDeletion(ctx, k8sClient, o.persistentLustre.create.Workflow())
 
 		Expect(k8sClient.Delete(ctx, o.persistentLustre.destroy.Workflow())).To(Succeed())
-		Eventually(func(g Gomega) error {
-			return k8sClient.Get(ctx, client.ObjectKeyFromObject(o.persistentLustre.destroy.Workflow()), o.persistentLustre.destroy.Workflow())
-		}, "60s").Should(HaveOccurred(), fmt.Sprintf("destroy workflow '%s' should be gone", o.persistentLustre.destroy.WorkflowName()))
+		WaitForDeletion(ctx, k8sClient, o.persistentLustre.destroy.Workflow())
 	}
 
 	if t.options.storageProfile != nil {
@@ -516,6 +512,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		Expect(k8sClient.Delete(ctx, profile)).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, profile)
 	}
 
 	if t.options.containerProfile != nil {
@@ -529,6 +526,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		Expect(k8sClient.Delete(ctx, profile)).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, profile)
 	}
 
 	return nil
