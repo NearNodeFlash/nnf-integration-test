@@ -226,8 +226,8 @@ func waitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 	}
 
 	// Setup can sometimes take longer than 60s when using lustre, so use a larger timeout
-	timeout := time.Minute
-	if state == dwsv1alpha2.StateSetup {
+	timeout := 2 * time.Minute
+	if state == dwsv1alpha2.StateSetup || state == dwsv1alpha2.StateTeardown {
 		timeout = 5 * time.Minute
 	}
 
