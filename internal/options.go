@@ -377,11 +377,11 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		By(fmt.Sprintf("Retrieving Storage Resource %s", client.ObjectKeyFromObject(storage)))
 		Eventually(func(g Gomega) bool {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(storage), storage)).To(Succeed())
-			return storage.Status.Status == nnfv1alpha1.ResourceReady
+			return storage.Status.Ready
 		}).WithTimeout(time.Minute).WithPolling(time.Second).Should(BeTrue())
 
 		o.persistentLustre.fsName = storage.Spec.AllocationSets[0].FileSystemName
-		o.persistentLustre.mgsNids = storage.Status.MgsNode
+		o.persistentLustre.mgsNids = storage.Status.MgsAddress
 	}
 
 	if o.mgsPool != nil {
