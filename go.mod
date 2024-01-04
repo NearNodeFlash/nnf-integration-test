@@ -16,9 +16,9 @@ require (
 
 require (
 	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20231115220321-eb84599f9630
-	github.com/NearNodeFlash/nnf-dm v0.0.6
+	github.com/NearNodeFlash/nnf-dm v0.0.1-0.20231221175134-0328a9ef0750
 	github.com/NearNodeFlash/nnf-ec v0.0.0-20231010162453-a8168bb6a52f // indirect
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240102213605-eedc75e58629
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240104015314-62f9e6fbdc51
 )
 
 require (
