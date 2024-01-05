@@ -45,7 +45,7 @@ dm:
 
 # Run container tests
 .PHONY: container
-conatiner:
+container:
 	${GINKGO_RUN} --label-filter='container' .
 
 .PHONY: .version
