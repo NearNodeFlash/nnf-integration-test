@@ -54,11 +54,6 @@ var tests = []*T{
 	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple),
 	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple),
 
-	// DuplicateTest(
-	// 	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").Pending(), // Will fail for Setup() exceeding time limit; needs investigation
-	// 	5,
-	// ),
-
 	// Storage Profiles
 	MakeTest("XFS with Storage Profile",
 		"#DW jobdw type=xfs name=xfs-storage-profile capacity=50GB profile=my-xfs-storage-profile").
@@ -81,6 +76,7 @@ var tests = []*T{
 		WithPersistentLustre("xfs-data-movement-lustre-instance").
 		WithGlobalLustreFromPersistentLustre("zenith", []string{"default"}).
 		WithPermissions(1050, 1051).
+		WithLabels("dm").
 		HardwareRequired(),
 	MakeTest("GFS2 with Data Movement",
 		"#DW jobdw type=gfs2 name=gfs2-data-movement capacity=50GB",
@@ -89,6 +85,7 @@ var tests = []*T{
 		WithPersistentLustre("gfs2-data-movement-lustre-instance").
 		WithGlobalLustreFromPersistentLustre("kelso", []string{"default"}).
 		WithPermissions(1050, 1051).
+		WithLabels("dm").
 		HardwareRequired(),
 	// PENDING: Having two lustres in a single test case doesn't work currently until we fix MGS conflict in int-test
 	MakeTest("Lustre with Data Movement",
@@ -98,6 +95,7 @@ var tests = []*T{
 		WithPersistentLustre("lustre-data-movement-lustre-instance").
 		WithGlobalLustreFromPersistentLustre("flame", []string{"default"}).
 		WithPermissions(1050, 1051).
+		WithLabels("dm").
 		HardwareRequired().Pending(),
 
 	// Containers - MPI

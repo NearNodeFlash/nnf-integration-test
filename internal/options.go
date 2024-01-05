@@ -86,7 +86,7 @@ func (t *T) WithStorageProfile() *T {
 		if args["command"] == "jobdw" || args["command"] == "create_persistent" {
 			if name, found := args["profile"]; found {
 				t.options.storageProfile = &TStorageProfile{name: name}
-				return t.WithLabels("storage_profile")
+				return t.WithLabels("storage_profile", "storage-profile")
 			}
 		}
 	}
@@ -128,7 +128,7 @@ func (t *T) WithContainerProfile(base string, options *ContainerProfileOptions) 
 		if args["command"] == "container" {
 			if profile, found := args["profile"]; found {
 				t.options.containerProfile = &TContainerProfile{name: profile, base: base, options: options}
-				return t.WithLabels("container_profile")
+				return t.WithLabels("container_profile", "container-profile")
 			}
 		}
 	}
@@ -182,7 +182,7 @@ type TMgsPool struct {
 
 func (t *T) WithMgsPool(name string, count int) *T {
 	t.options.mgsPool = &TMgsPool{name: name, count: count}
-	return t.WithLabels("mgsPool")
+	return t.WithLabels("mgs_pool", "mgs-pool")
 }
 
 type TGlobalLustre struct {
@@ -238,7 +238,7 @@ func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []strin
 		}
 	}
 
-	return t.WithLabels("global_lustre")
+	return t.WithLabels("global_lustre", "global-lustre")
 }
 
 type TDuplicate struct {
