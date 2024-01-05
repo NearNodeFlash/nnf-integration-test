@@ -35,6 +35,9 @@ type TOptions struct {
 	cleanupPersistent *TCleanupPersistentInstance
 	duplicate         *TDuplicate
 	hardwareRequired  bool
+	lowTimeout        time.Duration
+	highTimeout       time.Duration
+	highTimeoutStates []dwsv1alpha2.WorkflowState
 }
 
 // Complex options that can not be duplicated

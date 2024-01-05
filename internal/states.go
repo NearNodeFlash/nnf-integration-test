@@ -215,6 +215,36 @@ func (t *T) AdvanceStateAndWaitForReady(ctx context.Context, k8sClient client.Cl
 	waitForReady(ctx, k8sClient, workflow, state)
 }
 
+// Timeouts can be one of two configurable values passed into the context: lowTimeout and
+// highTimeout. The lowTimeout is the default value used for states. highTimeout is used for any
+// state that needs more time (e.g. Setup and Teardown) and is also configurable.
+func getTimeout(ctx context.Context, state dwsv1alpha2.WorkflowState) time.Duration {
+
+	// Retrieve the list of states that use highTimeout
+	highTimeoutStates, ok := ctx.Value("highTimeoutStates").([]dwsv1alpha2.WorkflowState)
+	if !ok {
+		panic("could not retrieve highTimeoutStates from context")
+	}
+
+	// See if the current state is one of the high timeout states. If so, use highTimeout.
+	for _, s := range highTimeoutStates {
+		if state == s {
+			t, ok := ctx.Value("highTimeout").(time.Duration)
+			if !ok {
+				panic("could not retrieve highTimeout from context")
+			}
+			return t
+		}
+	}
+
+	// Otherwise, retrieve and use the lowTimeout
+	t, ok := ctx.Value("lowTimeout").(time.Duration)
+	if !ok {
+		panic("could not retrieve lowTimeout from context")
+	}
+	return t
+}
+
 func waitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow, state dwsv1alpha2.WorkflowState) {
 
 	achieveState := func(state dwsv1alpha2.WorkflowState) OmegaMatcher {
@@ -225,11 +255,8 @@ func waitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		)
 	}
 
-	// Setup can sometimes take longer than 60s when using lustre, so use a larger timeout
-	timeout := 2 * time.Minute
-	if state == dwsv1alpha2.StateSetup || state == dwsv1alpha2.StateTeardown {
-		timeout = 5 * time.Minute
-	}
+	// Get the timeout based on which state it is
+	timeout := getTimeout(ctx, state)
 
 	Eventually(func() dwsv1alpha2.WorkflowStatus {
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(workflow), workflow)).Should(Succeed())

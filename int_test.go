@@ -31,6 +31,22 @@ import (
 	dwsv1alpha2 "github.com/DataWorkflowServices/dws/api/v1alpha2"
 )
 
+var (
+	// This is the default timeout used for the workflow states. Can be overridden using LTIMEOUT
+	// env var.
+	lowTimeout = "2m"
+
+	// This is the high bar timeout used for the special states defined by highTimeoutStates. Can be
+	// overridden using HTIMEOUT env var.
+	highTimeout = "5m"
+
+	// Which states use the high timeout
+	highTimeoutStates = []dwsv1alpha2.WorkflowState{
+		dwsv1alpha2.StateSetup,
+		dwsv1alpha2.StateTeardown,
+	}
+)
+
 var tests = []*T{
 	// Examples:
 	//
