@@ -23,7 +23,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -41,7 +43,6 @@ import (
 
 	dwsv1alpha2 "github.com/DataWorkflowServices/dws/api/v1alpha2"
 	lusv1alpha1 "github.com/NearNodeFlash/lustre-fs-operator/api/v1alpha1"
-	dmv1alpha1 "github.com/NearNodeFlash/nnf-dm/api/v1alpha1"
 	nnfv1alpha1 "github.com/NearNodeFlash/nnf-sos/api/v1alpha1"
 )
 
@@ -71,7 +72,31 @@ var _ = BeforeSuite(func() {
 	zaplogger := zapcr.New(zapcr.WriteTo(GinkgoWriter), zapcr.Encoder(encoder), zapcr.UseDevMode(true))
 	log.SetLogger(zaplogger)
 
-	ctx, cancel = context.WithCancel(context.TODO())
+	ctx, cancel = context.WithCancel(context.Background())
+
+	By("Retrieving Workflow State Timeouts")
+	// given a default timeout and a env var name, get the duration string and parse it
+	getTimeoutDuration := func(d, env string) time.Duration {
+		s := d
+		// if set, use the env variable
+		if e := os.Getenv(env); e != "" {
+			s = e
+		}
+		// parse it
+		t, err := time.ParseDuration(s)
+		if err != nil {
+			panic(fmt.Sprintf("cannot prase timeout: %v", err))
+		}
+		return t
+	}
+
+	lowTimeoutDuration := getTimeoutDuration(lowTimeout, "LTIMEOUT")
+	highTimeoutDuration := getTimeoutDuration(highTimeout, "HTIMEOUT")
+	ctx = context.WithValue(ctx, "lowTimeout", lowTimeoutDuration)
+	ctx = context.WithValue(ctx, "highTimeout", highTimeoutDuration)
+	ctx = context.WithValue(ctx, "highTimeoutStates", highTimeoutStates)
+	fmt.Printf("Using a low timeout of '%s'\n", lowTimeoutDuration)
+	fmt.Printf("Using a high timeout of '%s' for the following states: %v\n", highTimeoutDuration, highTimeoutStates)
 
 	By("Bootstrapping Test Env")
 	useExistingClustre := true
@@ -86,9 +111,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = lusv1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = dmv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = nnfv1alpha1.AddToScheme(scheme.Scheme)

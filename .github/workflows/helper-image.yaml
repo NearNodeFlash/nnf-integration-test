@@ -1,0 +1,67 @@
+name: Build Helper Image
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        id: checkout_repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: "Lowercase repository name for docker build"
+        id: lowercase-repository-name
+        run: echo "REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: "Set tags for main/master"
+        id: set_tags
+        run: |
+          echo "VERSION_TAG=$(./git-version-gen | grep -v UNKNOWN)" >> ${GITHUB_ENV}
+          echo "SHA_TAG=$(git rev-parse HEAD)" >> ${GITHUB_ENV}
+          echo "${GITHUB_ENV}:"
+          cat ${GITHUB_ENV}
+        shell: bash
+
+      - name: "Docker metadata"
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ env.REPO_NAME }}-helper
+          tags: |
+            # For merge to master branch, tag example: 'master'
+            type=ref,event=branch
+            # For PR event, tag example: 'pr-3'
+            type=ref,event=pr
+            # For PR event or merge event, tag example: 1.0.1.12-5667
+            type=raw,value=${{ env.VERSION_TAG }}
+            # For PR event or merge, tag example: 566769e04d2436cf5f42ae4f46092c7dff6e668e
+            type=raw,value=${{ env.SHA_TAG }}          
+            # For push to semver tag, tag example: 1.0.2
+            # This also sets 'latest'.
+            type=semver,pattern={{version}}
+            # For push to semver tag, tag example: 1.0
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: "Docker login"
+        id: docker_login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Build the final Docker image"
+        id: docker_build
+        uses: docker/build-push-action@v5
+        with:
+          context: helper_image
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}

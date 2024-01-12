@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,6 +34,10 @@ type TOptions struct {
 	globalLustre      *TGlobalLustre
 	cleanupPersistent *TCleanupPersistentInstance
 	duplicate         *TDuplicate
+	hardwareRequired  bool
+	lowTimeout        time.Duration
+	highTimeout       time.Duration
+	highTimeoutStates []dwsv1alpha2.WorkflowState
 }
 
 // Complex options that can not be duplicated
@@ -84,7 +89,7 @@ func (t *T) WithStorageProfile() *T {
 		if args["command"] == "jobdw" || args["command"] == "create_persistent" {
 			if name, found := args["profile"]; found {
 				t.options.storageProfile = &TStorageProfile{name: name}
-				return t.WithLabels("storage_profile")
+				return t.WithLabels("storage_profile", "storage-profile")
 			}
 		}
 	}
@@ -126,7 +131,7 @@ func (t *T) WithContainerProfile(base string, options *ContainerProfileOptions) 
 		if args["command"] == "container" {
 			if profile, found := args["profile"]; found {
 				t.options.containerProfile = &TContainerProfile{name: profile, base: base, options: options}
-				return t.WithLabels("container_profile")
+				return t.WithLabels("container_profile", "container-profile")
 			}
 		}
 	}
@@ -180,7 +185,7 @@ type TMgsPool struct {
 
 func (t *T) WithMgsPool(name string, count int) *T {
 	t.options.mgsPool = &TMgsPool{name: name, count: count}
-	return t.WithLabels("mgsPool")
+	return t.WithLabels("mgs_pool", "mgs-pool")
 }
 
 type TGlobalLustre struct {
@@ -221,7 +226,22 @@ func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []strin
 		namespaces: lustreNamespaces,
 	}
 
-	return t.WithLabels("global_lustre")
+	// For copy_in/copy_out, pull the source/destination paths and add them to global lustre
+	for _, directive := range t.directives {
+		args, _ := dwdparse.BuildArgsMap(directive)
+
+		if args["command"] == "copy_in" {
+			if path, found := args["source"]; found {
+				t.options.globalLustre.in = path
+			}
+		} else if args["command"] == "copy_out" {
+			if path, found := args["destination"]; found {
+				t.options.globalLustre.out = path
+			}
+		}
+	}
+
+	return t.WithLabels("global_lustre", "global-lustre")
 }
 
 type TDuplicate struct {
@@ -240,6 +260,15 @@ func (t *T) WithPermissions(userId, groupId uint32) *T {
 // Prepare a test with the programmed test options.
 func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
+
+	// Skip the test if hardware is required and the current context includes "kind"
+	if o.hardwareRequired {
+		if context, err := CurrentContext(); err == nil {
+			if strings.Contains(context, "kind") {
+				Skip("This test cannot run in kind environment")
+			}
+		}
+	}
 
 	if o.storageProfile != nil {
 		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
@@ -351,11 +380,11 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		By(fmt.Sprintf("Retrieving Storage Resource %s", client.ObjectKeyFromObject(storage)))
 		Eventually(func(g Gomega) bool {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(storage), storage)).To(Succeed())
-			return storage.Status.Status == nnfv1alpha1.ResourceReady
+			return storage.Status.Ready
 		}).WithTimeout(time.Minute).WithPolling(time.Second).Should(BeTrue())
 
 		o.persistentLustre.fsName = storage.Spec.AllocationSets[0].FileSystemName
-		o.persistentLustre.mgsNids = storage.Status.MgsNode
+		o.persistentLustre.mgsNids = storage.Status.MgsAddress
 	}
 
 	if o.mgsPool != nil {
@@ -396,6 +425,13 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		By(fmt.Sprintf("Creating a global lustre file system '%s' @ '%s'", client.ObjectKeyFromObject(lustre), lustre.Spec.MountRoot))
 		Expect(k8sClient.Create(ctx, lustre)).To(Succeed())
+
+		// For our testing purposes, a copy_in directive assumes global lustre.
+		// With this set, the source path will be created on the global lustre
+		// filesystem
+		if len(o.globalLustre.in) > 0 {
+			SetupCopyIn(ctx, k8sClient, t, t.options)
+		}
 	}
 
 	return nil
@@ -407,6 +443,16 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	o := t.options
 
+	// Remove any helper pods that may have been used (e.g. copy_in, copy_out)
+	if len(t.helperPods) > 0 {
+		CleanupHelperPods(ctx, k8sClient, t)
+	}
+
+	// TODO: If a real lustre filesystem is used rather than persistent, we
+	// should fire up another helper pod to delete copy_in/copy_out files (i.e.)
+	// to.globalLustre.in/out. In the meantime, it is assumed the global lustre
+	// is torn down.
+
 	if o.globalLustre != nil {
 		By(fmt.Sprintf("Deleting global lustre '%s'", o.globalLustre.name))
 		lustre := &lusv1alpha1.LustreFileSystem{
@@ -417,20 +463,19 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		Expect(k8sClient.Delete(ctx, lustre)).To(Succeed())
-		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKeyFromObject(lustre), lustre)
-		}).ShouldNot(Succeed(), "lustre file system resource should delete")
+		WaitForDeletion(ctx, k8sClient, lustre)
 	}
 
 	if o.mgsPool != nil {
 		for i := 0; i < o.mgsPool.count; i++ {
 			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-destroy", o.mgsPool.name, i), fmt.Sprintf("#DW destroy_persistent name=%s-%d", o.mgsPool.name, i))
 
-			By(fmt.Sprintf("destroying persistent lustre MGS '%s'", o.mgsPool.name))
+			By(fmt.Sprintf("Destroying persistent lustre MGS '%s'", o.mgsPool.name))
 			Expect(k8sClient.Create(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
 			mgsPersistentStorage.Execute(ctx, k8sClient)
 			mgsPersistentStorage.Cleanup(ctx, k8sClient)
 			Expect(k8sClient.Delete(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
+			WaitForDeletion(ctx, k8sClient, mgsPersistentStorage.Workflow())
 		}
 	}
 
@@ -442,6 +487,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		Expect(k8sClient.Create(ctx, test.Workflow())).To(Succeed())
 		test.Execute(ctx, k8sClient)
 		Expect(k8sClient.Delete(ctx, test.Workflow())).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, test.Workflow())
 	}
 
 	if o.persistentLustre != nil {
@@ -452,7 +498,10 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		o.persistentLustre.destroy.Execute(ctx, k8sClient)
 
 		Expect(k8sClient.Delete(ctx, o.persistentLustre.create.Workflow())).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, o.persistentLustre.create.Workflow())
+
 		Expect(k8sClient.Delete(ctx, o.persistentLustre.destroy.Workflow())).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, o.persistentLustre.destroy.Workflow())
 	}
 
 	if t.options.storageProfile != nil {
@@ -466,6 +515,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		Expect(k8sClient.Delete(ctx, profile)).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, profile)
 	}
 
 	if t.options.containerProfile != nil {
@@ -479,6 +529,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		Expect(k8sClient.Delete(ctx, profile)).To(Succeed())
+		WaitForDeletion(ctx, k8sClient, profile)
 	}
 
 	return nil
