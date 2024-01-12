@@ -71,9 +71,7 @@ func (t *T) proposal(ctx context.Context, k8sClient client.Client, workflow *dws
 
 func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow) {
 
-	// TODO: Move this to a global variable and initialized in the test suite.
-	systemConfig := &dwsv1alpha2.SystemConfiguration{}
-	Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "default", Namespace: corev1.NamespaceDefault}, systemConfig)).To(Succeed())
+	systemConfig := GetSystemConfiguraton(ctx, k8sClient)
 
 	By("Assigns Computes")
 	{
@@ -186,16 +184,16 @@ func (t *T) postRun(ctx context.Context, k8sClient client.Client, workflow *dwsv
 
 func (t *T) dataOut(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow) {
 	t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha2.StateDataOut)
+
+	// If copy_out directive was set, verify that the copy_in file matches the copy_out file on global lustre
+	if t.options.globalLustre != nil && len(t.options.globalLustre.out) > 0 {
+		VerifyCopyOut(ctx, k8sClient, t, t.options)
+	}
 }
 
 func (t *T) teardown(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow) {
 	t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha2.StateTeardown)
 }
-
-// func DataIn...
-// func PreRun...
-// func PostRun...
-// func DataOut...
 
 func (t *T) AdvanceStateAndWaitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow, state dwsv1alpha2.WorkflowState) {
 	By(fmt.Sprintf("Advances to %s State", state))
@@ -217,6 +215,36 @@ func (t *T) AdvanceStateAndWaitForReady(ctx context.Context, k8sClient client.Cl
 	waitForReady(ctx, k8sClient, workflow, state)
 }
 
+// Timeouts can be one of two configurable values passed into the context: lowTimeout and
+// highTimeout. The lowTimeout is the default value used for states. highTimeout is used for any
+// state that needs more time (e.g. Setup and Teardown) and is also configurable.
+func getTimeout(ctx context.Context, state dwsv1alpha2.WorkflowState) time.Duration {
+
+	// Retrieve the list of states that use highTimeout
+	highTimeoutStates, ok := ctx.Value("highTimeoutStates").([]dwsv1alpha2.WorkflowState)
+	if !ok {
+		panic("could not retrieve highTimeoutStates from context")
+	}
+
+	// See if the current state is one of the high timeout states. If so, use highTimeout.
+	for _, s := range highTimeoutStates {
+		if state == s {
+			t, ok := ctx.Value("highTimeout").(time.Duration)
+			if !ok {
+				panic("could not retrieve highTimeout from context")
+			}
+			return t
+		}
+	}
+
+	// Otherwise, retrieve and use the lowTimeout
+	t, ok := ctx.Value("lowTimeout").(time.Duration)
+	if !ok {
+		panic("could not retrieve lowTimeout from context")
+	}
+	return t
+}
+
 func waitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha2.Workflow, state dwsv1alpha2.WorkflowState) {
 
 	achieveState := func(state dwsv1alpha2.WorkflowState) OmegaMatcher {
@@ -227,11 +255,14 @@ func waitForReady(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		)
 	}
 
+	// Get the timeout based on which state it is
+	timeout := getTimeout(ctx, state)
+
 	Eventually(func() dwsv1alpha2.WorkflowStatus {
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(workflow), workflow)).Should(Succeed())
 		return workflow.Status
 	}).
-		WithTimeout(time.Minute).
+		WithTimeout(timeout).
 		WithPolling(time.Second).
 		Should(achieveState(state), fmt.Sprintf("achieve state '%s'", state))
 }

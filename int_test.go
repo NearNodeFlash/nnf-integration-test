@@ -31,6 +31,22 @@ import (
 	dwsv1alpha2 "github.com/DataWorkflowServices/dws/api/v1alpha2"
 )
 
+var (
+	// This is the default timeout used for the workflow states. Can be overridden using LTIMEOUT
+	// env var.
+	lowTimeout = "2m"
+
+	// This is the high bar timeout used for the special states defined by highTimeoutStates. Can be
+	// overridden using HTIMEOUT env var.
+	highTimeout = "5m"
+
+	// Which states use the high timeout
+	highTimeoutStates = []dwsv1alpha2.WorkflowState{
+		dwsv1alpha2.StateSetup,
+		dwsv1alpha2.StateTeardown,
+	}
+)
+
 var tests = []*T{
 	// Examples:
 	//
@@ -45,43 +61,58 @@ var tests = []*T{
 	//
 	// Duplicate a test case 20 times.
 	//   DuplicateTest(
-	//      MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB"),
+	//      MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB"),
 	//      20,
 	//   ),
 
-	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").WithLabels(Simple),
-	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=1TB").WithLabels(Simple).Pending(),
-	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=1TB").WithLabels(Simple).Pending(),
-
-	DuplicateTest(
-		MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=1TB").Pending(), // Will fail for Setup() exceeding time limit; needs investigation
-		5,
-	),
+	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").WithLabels(Simple),
+	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithLabels(Simple),
+	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple),
+	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple),
 
 	// Storage Profiles
 	MakeTest("XFS with Storage Profile",
-		"#DW jobdw type=xfs name=xfs-storage-profile capacity=1TB profile=my-xfs-storage-profile").
+		"#DW jobdw type=xfs name=xfs-storage-profile capacity=50GB profile=my-xfs-storage-profile").
 		WithStorageProfile(),
 	MakeTest("GFS2 with Storage Profile",
-		"#DW jobdw type=gfs2 name=gfs2-storage-profile capacity=1TB profile=my-gfs2-storage-profile").
-		WithStorageProfile().
-		Pending(),
+		"#DW jobdw type=gfs2 name=gfs2-storage-profile capacity=50GB profile=my-gfs2-storage-profile").
+		WithStorageProfile(),
 
 	// Persistent
 	MakeTest("Persistent Lustre",
-		"#DW create_persistent type=lustre name=persistent-lustre capacity=1TB").
+		"#DW create_persistent type=lustre name=persistent-lustre capacity=50GB").
 		AndCleanupPersistentInstance().
 		Serialized(),
 
 	// Data Movement
 	MakeTest("XFS with Data Movement",
-		"#DW jobdw type=xfs name=xfs-data-movement capacity=1TB",
-		"#DW copy_in source=/lus/global/test.in destination=$DW_JOB_xfs-data-movement/",    // TODO: Create a file "test.in" in the global lustre directory
-		"#DW copy_out source=$DW_JOB_xfs-data-movement/test.out destination=/lus/global/"). // TODO: Validate file "test.out" in the global lustre directory
-		WithPersistentLustre("xfs-data-movement-lustre-instance").                          // Manage a persistent Lustre instance as part of the test
-		WithGlobalLustreFromPersistentLustre("global", nil).
-		Serialized().
-		Pending(),
+		"#DW jobdw type=xfs name=xfs-data-movement capacity=50GB",
+		"#DW copy_in source=/lus/zenith/testuser/test.in destination=$DW_JOB_xfs-data-movement/",
+		"#DW copy_out source=$DW_JOB_xfs-data-movement/test.in destination=/lus/zenith/testuser/test.out").
+		WithPersistentLustre("xfs-data-movement-lustre-instance").
+		WithGlobalLustreFromPersistentLustre("zenith", []string{"default"}).
+		WithPermissions(1050, 1051).
+		WithLabels("dm").
+		HardwareRequired(),
+	MakeTest("GFS2 with Data Movement",
+		"#DW jobdw type=gfs2 name=gfs2-data-movement capacity=50GB",
+		"#DW copy_in source=/lus/kelso/testuser/test.in destination=$DW_JOB_gfs2-data-movement/",
+		"#DW copy_out profile=no-xattr source=$DW_JOB_gfs2-data-movement/test.in destination=/lus/kelso/testuser/test.out").
+		WithPersistentLustre("gfs2-data-movement-lustre-instance").
+		WithGlobalLustreFromPersistentLustre("kelso", []string{"default"}).
+		WithPermissions(1050, 1051).
+		WithLabels("dm").
+		HardwareRequired(),
+	// PENDING: Having two lustres in a single test case doesn't work currently until we fix MGS conflict in int-test
+	MakeTest("Lustre with Data Movement",
+		"#DW jobdw type=lustre name=lustre-data-movement capacity=50GB",
+		"#DW copy_in source=/lus/flame/testuser/test.in destination=$DW_JOB_lustre-data-movement/",
+		"#DW copy_out source=$DW_JOB_lustre-data-movement/test.in destination=/lus/flame/testuser/test.out").
+		WithPersistentLustre("lustre-data-movement-lustre-instance").
+		WithGlobalLustreFromPersistentLustre("flame", []string{"default"}).
+		WithPermissions(1050, 1051).
+		WithLabels("dm").
+		HardwareRequired().Pending(),
 
 	// Containers - MPI
 	MakeTest("GFS2 with MPI Containers",
@@ -164,21 +195,20 @@ var tests = []*T{
 		ExpectError(dwsv1alpha2.StateProposal).WithLabels("unsupported-fs"),
 
 	// Containers - Multiple Storages
-	// TODO: The timing on these needs some work, hence Pending()
 	MakeTest("GFS2 and Lustre with Containers",
 		"#DW jobdw name=containers-local-storage type=gfs2 capacity=100GB",
 		"#DW persistentdw name=containers-persistent-storage",
 		"#DW container name=gfs2-lustre-with-containers profile=example-success DW_JOB_foo_local_storage=containers-local-storage DW_PERSISTENT_foo_persistent_storage=containers-persistent-storage").
 		WithPersistentLustre("containers-persistent-storage").
 		WithPermissions(1050, 1051).
-		Pending(),
+		WithLabels("multi-storage"),
 	MakeTest("GFS2 and Lustre with Containers MPI",
 		"#DW jobdw name=containers-local-storage-mpi type=gfs2 capacity=100GB",
 		"#DW persistentdw name=containers-persistent-storage-mpi",
 		"#DW container name=gfs2-lustre-with-containers-mpi profile=example-mpi DW_JOB_foo_local_storage=containers-local-storage-mpi DW_PERSISTENT_foo_persistent_storage=containers-persistent-storage-mpi").
 		WithPersistentLustre("containers-persistent-storage-mpi").
 		WithPermissions(1050, 1051).
-		Pending(),
+		WithLabels("multi-storage"),
 
 	// External MGS
 	MakeTest("Lustre with MGS pool",

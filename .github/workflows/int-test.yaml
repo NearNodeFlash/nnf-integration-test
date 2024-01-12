@@ -1,26 +1,116 @@
-name: NNF int-test
-
-#on: [push]
-
+name: NNF Integration-Test
+on:
+  schedule:
+    # Time is in UTC - start at 11:00pm CDT
+    - cron: "00 05 * * *"
+  workflow_dispatch:
+    inputs:
+      system:
+        description: Which system to run on
+        type: choice
+        required: true
+        default: "htx-1"
+        options:
+          - htx-1
+      procs:
+        description: Number of parallel workflows to run
+        required: true
+        default: 1
+        type: number
+      testTarget:
+        description: Which test target to run
+        type: choice
+        required: true
+        default: "simple"
+        options:
+          - sanity
+          - simple
+          - dm
+          - container
+          - test
+      rounds:
+        description: How many times to run the test target
+        type: number
+        required: true
+        default: 1
+      hTimeout:
+        description: High Timeout duration
+        type: string
+        required: true
+        default: "5m"
+      lTimeout:
+        description: Low Timeout duration
+        type: string
+        required: true
+        default: "2m"
+env:
+  TEST_TARGET: simple
+  PROCS: 1
+  HTIMEOUT: 5m
+  LTIMEOUT: 2m
+  SYSTEM: htx-1
+  ROUNDS: 1
 jobs:
   int-test:
-    runs-on: self-hosted
+    runs-on: ${{ inputs.system || 'htx-1' }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Setup Go
-      uses: actions/setup-go@v3
-      with:
-        go-version-file: 'go.mod'
-        cache: true
-    - name: Setup Ginkgo
-      run: >
-        GINKGO_MOD=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $1 "@" $2}')
-        GOMEGA_VER=$(grep "github.com/onsi/gomega" go.mod | awk '{print $2}')
-        bash -c 'echo Using $GINKGO_MOD and gomega $GOMEGA_VER && go get $GINKGO_MOD && go get github.com/onsi/gomega@$GOMEGA_VER'
-    - name: Setup Ginkgo CLI
-      run: >
-        GINKGO_CLI_VER=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $2}')
-        bash -c 'go install github.com/onsi/ginkgo/v2/ginkgo@$GINKGO_CLI_VER'
-    - name: Run int-test on Self-Hosted System
-      run: type ginkgo && ginkgo version && ginkgo run -p --vv ./test/...
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Version
+        run: ./git-version-gen
+      - name: Override TEST_TARGET with manual input
+        if: ${{ inputs != null && inputs.testTarget != null }}
+        run: |
+          echo "TEST_TARGET=${{ inputs.testTarget}}" >> $GITHUB_ENV
+      - name: Override PROCS with manual input
+        if: ${{ inputs != null && inputs.procs != null }}
+        run: |
+          echo "PROCS=${{ inputs.procs }}" >> $GITHUB_ENV
+      - name: Override ROUNDS with manual input
+        if: ${{ inputs != null && inputs.rounds!= null }}
+        run: |
+          echo "ROUNDS=${{ inputs.rounds }}" >> $GITHUB_ENV
+      - name: Override LTIMEOUT with manual input
+        if: ${{ inputs != null && inputs.lTimeout!= null }}
+        run: |
+          echo "LTIMEOUT=${{ inputs.lTimeout }}" >> $GITHUB_ENV
+      - name: Override HTIMEOUT with manual input
+        if: ${{ inputs != null && inputs.hTimeout!= null }}
+        run: |
+          echo "HTIMEOUT=${{ inputs.hTimeout }}" >> $GITHUB_ENV
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - name: Setup Ginkgo
+        run: >
+          GINKGO_MOD=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $1 "@" $2}')
+          GOMEGA_VER=$(grep "github.com/onsi/gomega" go.mod | awk '{print $2}')
+          bash -c 'echo Using $GINKGO_MOD and gomega $GOMEGA_VER && go get $GINKGO_MOD && go get github.com/onsi/gomega@$GOMEGA_VER'
+      - name: Setup Ginkgo CLI
+        run: >
+          GINKGO_CLI_VER=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $2}')
+          bash -c 'go install github.com/onsi/ginkgo/v2/ginkgo@$GINKGO_CLI_VER'
+      - name: Run int-test (P=${{ env.P }} ${{ env.TEST_TARGET }}) ${{ env.ROUNDS }} time(s) on ${{ env.SYSTEM }}
+        run: |
+          for i in {1..${{ env.ROUNDS }}}; do
+            echo ""
+            echo "--------------------"
+            echo "Attempt start: $i"
+            echo "--------------------"
+            echo ""
+            make ${{ env.TEST_TARGET }}
+            echo ""
+            echo "@@@@@@@@@@@@@@@@@@@@"
+            echo "Attempt end: $i"
+            echo "@@@@@@@@@@@@@@@@@@@@"
+            echo ""
+          done
+        shell: bash
+        env:
+          P: ${{ env.PROCS }}
+          HTIMEOUT: ${{ env.HTIMEOUT }}
+          LTIMEOUT: ${{ env.LTIMEOUT }}
