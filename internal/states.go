@@ -84,8 +84,8 @@ func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		Expect(computes.Data).To(HaveLen(0))
 
 		computes.Data = make([]dwsv1alpha2.ComputesData, 0)
-		for _, node := range systemConfig.Spec.ComputeNodes {
-			computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: node.Name})
+		for _, nodeName := range systemConfig.Computes() {
+			computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *nodeName})
 			// TODO: Filter out unwanted compute nodes
 		}
 

@@ -1,11 +1,11 @@
 github.com/DataWorkflowServices/dws v0.0.1-0.20240207192901-62a0958c23f7 h1:0WwSoJBPDJIZbM0rgXZk2D+/lBc4EYnM8OE1MRgskjg=
 github.com/DataWorkflowServices/dws v0.0.1-0.20240207192901-62a0958c23f7/go.mod h1:vSTBLWbsFjMYxx+sjMDyZpMXLY9m5Bp73cjnmAL30WU=
-github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20231115220321-eb84599f9630 h1:kgOtvQWxWb/EgbYcvzoEajVB6Af365KokNVKl1NmnFM=
-github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20231115220321-eb84599f9630/go.mod h1:qBcz9p8sXm1qhDf8WUmhxTlD1NCMEjoAD7NoHbQvMiI=
+github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20240130171810-a74d2fde82d0 h1:j7pZYbI6J9QjcaWL36QeWqLParIjn2GO4wP12r90pO4=
+github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20240130171810-a74d2fde82d0/go.mod h1:qBcz9p8sXm1qhDf8WUmhxTlD1NCMEjoAD7NoHbQvMiI=
 github.com/NearNodeFlash/nnf-ec v0.0.0-20231010162453-a8168bb6a52f h1:aWtSSQLLk9mUZj94mowirQeVw9saf80gVe10X0rZe8o=
 github.com/NearNodeFlash/nnf-ec v0.0.0-20231010162453-a8168bb6a52f/go.mod h1:oxdwMqfttOF9dabJhqrWlirCnMk8/8eyLMwl+hducjk=
-github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240207194141-d4c5588829a1 h1:1FgQ8cLuy6+qpIbdHv2cFltssde2YTe823v+BAhALpo=
-github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240207194141-d4c5588829a1/go.mod h1:YtN3gTkpS4ju1jvBMZTU/UcCbvRt4DFH8w9mFue+diQ=
+github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240207222255-01f459856159 h1:orkTvgymApX2IL5h5i06KdB+EuBL6kN2T2W+XjC7loE=
+github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240207222255-01f459856159/go.mod h1:YtN3gTkpS4ju1jvBMZTU/UcCbvRt4DFH8w9mFue+diQ=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
