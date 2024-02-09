@@ -31,7 +31,7 @@ func GetSystemConfiguraton(ctx context.Context, k8sClient client.Client) *dwsv1a
 	Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "default", Namespace: corev1.NamespaceDefault}, systemConfig)).To(Succeed())
 
 	// Except there to be at least 1 compute and storage node
-	Expect(systemConfig.Spec.ComputeNodes).ToNot(HaveLen(0))
+	Expect(systemConfig.Computes()).ToNot(HaveLen(0))
 	Expect(systemConfig.Spec.StorageNodes).ToNot(HaveLen(0))
 
 	return systemConfig
