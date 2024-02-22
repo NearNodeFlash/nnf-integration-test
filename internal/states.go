@@ -86,7 +86,12 @@ func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		computes.Data = make([]dwsv1alpha2.ComputesData, 0)
 		for _, nodeName := range systemConfig.Computes() {
 			computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *nodeName})
-			// TODO: Filter out unwanted compute nodes
+		}
+
+		if t.options.useExternalComputes {
+			for _, nodeName := range systemConfig.ComputesExternal() {
+				computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *nodeName})
+			}
 		}
 
 		Expect(k8sClient.Update(ctx, computes)).To(Succeed())
