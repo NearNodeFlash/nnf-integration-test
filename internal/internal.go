@@ -148,7 +148,8 @@ func (t *T) Workflow() *dwsv1alpha2.Workflow {
 
 // To apply a set of labels for a particular test, use the withLables() method. Labels
 const (
-	Simple = "simple"
+	Simple         = "simple"
+	ExternalLustre = "external_lustre"
 )
 
 func (t *T) WithLabels(labels ...string) *T { t.labels = append(t.labels, labels...); return t }
