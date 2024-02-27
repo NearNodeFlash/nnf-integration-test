@@ -70,6 +70,9 @@ var tests = []*T{
 	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple),
 	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple),
 
+	// External Computes
+	MakeTest("Lustre External", "#DW jobdw type=lustre name=lustre capacity=50GB").WithExternalComputes().WithLabels(ExternalLustre),
+
 	// Storage Profiles
 	MakeTest("XFS with Storage Profile",
 		"#DW jobdw type=xfs name=xfs-storage-profile capacity=50GB profile=my-xfs-storage-profile").

@@ -22,22 +22,23 @@ import (
 	"github.com/DataWorkflowServices/dws/utils/dwdparse"
 )
 
-// TOptions let you configure things prior to a test running or during test
+// TOptions lets you configure things prior to a test running or during test
 // execution. Nil values represent no configuration of that type.
 type TOptions struct {
-	stopAfter         *TStopAfter
-	expectError       *TExpectError
-	storageProfile    *TStorageProfile
-	containerProfile  *TContainerProfile
-	persistentLustre  *TPersistentLustre
-	mgsPool           *TMgsPool
-	globalLustre      *TGlobalLustre
-	cleanupPersistent *TCleanupPersistentInstance
-	duplicate         *TDuplicate
-	hardwareRequired  bool
-	lowTimeout        time.Duration
-	highTimeout       time.Duration
-	highTimeoutStates []dwsv1alpha2.WorkflowState
+	stopAfter           *TStopAfter
+	expectError         *TExpectError
+	storageProfile      *TStorageProfile
+	containerProfile    *TContainerProfile
+	persistentLustre    *TPersistentLustre
+	mgsPool             *TMgsPool
+	globalLustre        *TGlobalLustre
+	cleanupPersistent   *TCleanupPersistentInstance
+	duplicate           *TDuplicate
+	hardwareRequired    bool
+	lowTimeout          time.Duration
+	highTimeout         time.Duration
+	highTimeoutStates   []dwsv1alpha2.WorkflowState
+	useExternalComputes bool
 }
 
 // Complex options that can not be duplicated
@@ -109,6 +110,12 @@ func (t *T) WithStorageProfileExternalMGS(externalMGS string) *T {
 	t.options.storageProfile.externalMgs = externalMGS
 
 	return t.WithLabels("externalMGS")
+}
+
+// WithExternalComputes engages external computes for the the test.
+func (t *T) WithExternalComputes() *T {
+	t.options.useExternalComputes = true
+	return t
 }
 
 type TContainerProfile struct {
