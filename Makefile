@@ -6,7 +6,7 @@ PARALLEL_OPT:=-procs=${P}
 endif
 
 # Base command to start the tests with ginkgo
-GINKGO_RUN?=ginkgo run ${PARALLEL_OPT} --v
+GINKGO_RUN?=CGO_ENABLED=0 ginkgo run ${PARALLEL_OPT} --v
 
 all: fmt vet
 
