@@ -280,15 +280,15 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 	if o.storageProfile != nil {
 		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
 
-		// Clone the placeholder profile
-		placeholder := &nnfv1alpha1.NnfStorageProfile{
+		// Clone the default profile.
+		defaultProf := &nnfv1alpha1.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "placeholder",
+				Name:      "default",
 				Namespace: "nnf-system",
 			},
 		}
 
-		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(placeholder), placeholder)).To(Succeed())
+		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(defaultProf), defaultProf)).To(Succeed())
 
 		profile := &nnfv1alpha1.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
@@ -297,7 +297,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 			},
 		}
 
-		placeholder.Data.DeepCopyInto(&profile.Data)
+		defaultProf.Data.DeepCopyInto(&profile.Data)
 		profile.Data.Default = false
 		if o.storageProfile.externalMgs != "" {
 			profile.Data.LustreStorage.CombinedMGTMDT = false
