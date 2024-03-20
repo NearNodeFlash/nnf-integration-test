@@ -39,6 +39,7 @@ type TOptions struct {
 	highTimeout         time.Duration
 	highTimeoutStates   []dwsv1alpha2.WorkflowState
 	useExternalComputes bool
+	singleCompute       bool
 }
 
 // Complex options that can not be duplicated
@@ -115,6 +116,12 @@ func (t *T) WithStorageProfileExternalMGS(externalMGS string) *T {
 // WithExternalComputes engages external computes for the the test.
 func (t *T) WithExternalComputes() *T {
 	t.options.useExternalComputes = true
+	return t
+}
+
+// WithSingleCompute randomly selects a single compute for the test.
+func (t *T) WithSingleCompute() *T {
+	t.options.singleCompute = true
 	return t
 }
 

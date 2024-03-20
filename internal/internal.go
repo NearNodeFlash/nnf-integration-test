@@ -150,6 +150,7 @@ func (t *T) Workflow() *dwsv1alpha2.Workflow {
 const (
 	Simple         = "simple"
 	ExternalLustre = "external_lustre"
+	SingleCompute  = "single_compute"
 )
 
 func (t *T) WithLabels(labels ...string) *T { t.labels = append(t.labels, labels...); return t }

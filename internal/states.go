@@ -84,13 +84,22 @@ func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		Expect(computes.Data).To(HaveLen(0))
 
 		computes.Data = make([]dwsv1alpha2.ComputesData, 0)
-		for _, nodeName := range systemConfig.Computes() {
-			computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *nodeName})
-		}
+		if t.options.singleCompute {
+			// randomComputeIndex := rand.Intn(len(systemConfig.Computes()))
+			// computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *systemConfig.Computes()[randomComputeIndex]})
 
-		if t.options.useExternalComputes {
-			for _, nodeName := range systemConfig.ComputesExternal() {
+			// For now, choose the same compute
+			computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *systemConfig.Computes()[len(systemConfig.Computes())-1]})
+		} else {
+
+			for _, nodeName := range systemConfig.Computes() {
 				computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *nodeName})
+			}
+
+			if t.options.useExternalComputes {
+				for _, nodeName := range systemConfig.ComputesExternal() {
+					computes.Data = append(computes.Data, dwsv1alpha2.ComputesData{Name: *nodeName})
+				}
 			}
 		}
 
@@ -133,7 +142,11 @@ func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 					storages := make([]dwsv1alpha2.ServersSpecStorage, len(systemConfig.Spec.StorageNodes))
 					for index, node := range systemConfig.Spec.StorageNodes {
 						storages[index].Name = node.Name
-						storages[index].AllocationCount = len(node.ComputesAccess)
+						if t.options.singleCompute {
+							storages[index].AllocationCount = 1
+						} else {
+							storages[index].AllocationCount = len(node.ComputesAccess)
+						}
 					}
 					return storages
 				case dwsv1alpha2.AllocateAcrossServers:

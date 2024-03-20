@@ -65,10 +65,18 @@ var tests = []*T{
 	//      20,
 	//   ),
 
-	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").WithLabels(Simple),
-	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithLabels(Simple),
-	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple),
-	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple),
+	// DuplicateTest(MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").WithLabels(Simple).Focused(),100),
+	// DuplicateTest(MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithLabels(Simple).Focused(),100),
+
+	MakeTest("XFS single compute", "#DW jobdw type=xfs name=xfs capacity=50GB").WithLabels(Simple).WithSingleCompute().StopAfter("Setup").Focused(),
+	MakeTest("GFS2 single compute", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithLabels(Simple).WithSingleCompute(),
+	MakeTest("Lustre single compute", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple).WithSingleCompute(),
+	MakeTest("Raw single compute", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple).WithSingleCompute(),
+
+	// MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").WithLabels(Simple),
+	// MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithLabels(Simple),
+	// MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple),
+	// MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple),
 
 	// External Computes
 	MakeTest("Lustre External", "#DW jobdw type=lustre name=lustre capacity=50GB").WithExternalComputes().WithLabels(ExternalLustre),
