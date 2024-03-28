@@ -108,6 +108,7 @@ jobs:
           GINKGO_CLI_VER=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $2}')
           bash -c 'go install github.com/onsi/ginkgo/v2/ginkgo@$GINKGO_CLI_VER'
       - name: Run int-test (P=${{ env.P }} ${{ env.TEST_TARGET }}) ${{ env.ROUNDS }} time(s) on ${{ env.SYSTEM }}
+        id: int-test
         run: |
           for i in {1..${{ env.ROUNDS }}}; do
             echo ""
@@ -134,4 +135,4 @@ jobs:
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: C036UR31LTD
           slack-update-message-ts: ${{ fromJson(steps.slack-build-started.outputs.slack-result).response.message.ts }}
-          slack-update-message-text: "${{ format('{0}\n\n```{1}```', ':no_entry_sign: Build status: Failed!', steps.fake-build-process.outputs.BUILD_RESULT) }}"
+          slack-update-message-text: "${{ format('{0}\n\n```{1}```', ':no_entry_sign: Build status: Failed!', steps.int-test.outputs.BUILD_RESULT) }}"
