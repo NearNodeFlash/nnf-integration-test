@@ -55,7 +55,7 @@ jobs:
   int-test:
     runs-on: ${{ inputs.system || 'htx-1' }}
     outputs:
-      test-result: ${{ steps.int-test.outputs.result }}
+      test-result: ${{ steps.int-test.outcome }}
     steps:
       - name: Send build started to slack
         uses: archive/github-actions-slack@master
