@@ -65,7 +65,7 @@ jobs:
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: ${{ env.SLACK_CHANNEL_ID }}
           slack-text: |
-            :hourglass: NNF Integration Test starting: ...
+            :hourglass: NNF Integration Test starting
 
             Please wait 😁
       - name: Checkout
@@ -115,7 +115,6 @@ jobs:
           P: ${{ env.PROCS }}
           HTIMEOUT: ${{ env.HTIMEOUT }}
           LTIMEOUT: ${{ env.LTIMEOUT }}
-        continue-on-error: true
         run: |
           for i in {1..${{ env.ROUNDS }}}; do
             echo ""
@@ -130,25 +129,44 @@ jobs:
             echo "@@@@@@@@@@@@@@@@@@@@"
             echo ""
           done
-  process-results:
-    needs: int-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check result
-        run: |
-          test_result=${{ needs.int-test.outputs.test-result }}
-          if [ "$test_result" == "success" ]; then
-            echo "Tests passed!"
-            exit 0
-          else
-            echo "Tests failed!"
-            exit 1
-          fi
-      - name: Update slack with build result
+      - name: Failure Slack Message
+        if: failure()
         uses: archive/github-actions-slack@master
         with:
-          slack-function: update-message
+          slack-function: send-message
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
           slack-channel: ${{ env.SLACK_CHANNEL_ID }}
-          slack-update-message-ts: ${{ fromJson(steps.slack-build-started.outputs.slack-result).response.message.ts }}
-          slack-update-message-text: "${{ format('{0}\n\n```{1}```', ':no_entry_sign: Build status: Failed!', steps.int-test.outputs.BUILD_RESULT) }}"
+          slack-text: |
+            :red_circle: NNF Integration Test Failed
+      - name: Success Slack Message
+        if: success()
+        uses: archive/github-actions-slack@master
+        with:
+          slack-function: send-message
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+          slack-channel: ${{ env.SLACK_CHANNEL_ID }}
+          slack-text: |
+            :green_circle: NNF Integration Test Passed
+
+  # process-results:
+  #   needs: int-test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check result
+  #       run: |
+  #         test_result=${{ needs.int-test.outputs.test-result }}
+  #         if [ "$test_result" == "success" ]; then
+  #           echo "Tests passed!"
+  #           exit 0
+  #         else
+  #           echo "Tests failed!"
+  #           exit 1
+  #         fi
+  #     - name: Update slack with build result
+  #       uses: archive/github-actions-slack@master
+  #       with:
+  #         slack-function: update-message
+  #         slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+  #         slack-channel: ${{ env.SLACK_CHANNEL_ID }}
+  #         slack-update-message-ts: ${{ fromJson(steps.slack-build-started.outputs.slack-result).response.message.ts }}
+  #         slack-update-message-text: "${{ format('{0}\n\n```{1}```', ':no_entry_sign: Build status: Failed!', steps.int-test.outputs.BUILD_RESULT) }}"
