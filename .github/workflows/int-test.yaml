@@ -50,10 +50,23 @@ env:
   LTIMEOUT: 2m
   SYSTEM: htx-1
   ROUNDS: 1
+  SLACK_CHANNEL_ID: C043U7PRGGM
 jobs:
   int-test:
     runs-on: ${{ inputs.system || 'htx-1' }}
     steps:
+      - name: Send build started to slack
+        uses: archive/github-actions-slack@master
+        id: slack-build-started
+
+        with:
+          slack-function: send-message
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+          slack-channel: ${{ env.SLACK_CHANNEL_ID }}
+          slack-text: |
+            :hourglass: NNF Integration Test starting: ...
+
+            Please wait 😁
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -114,3 +127,11 @@ jobs:
           P: ${{ env.PROCS }}
           HTIMEOUT: ${{ env.HTIMEOUT }}
           LTIMEOUT: ${{ env.LTIMEOUT }}
+      - name: Update slack with build result
+        uses: archive/github-actions-slack@master
+        with:
+          slack-function: update-message
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+          slack-channel: C036UR31LTD
+          slack-update-message-ts: ${{ fromJson(steps.slack-build-started.outputs.slack-result).response.message.ts }}
+          slack-update-message-text: "${{ format('{0}\n\n```{1}```', ':no_entry_sign: Build status: Failed!', steps.fake-build-process.outputs.BUILD_RESULT) }}"
