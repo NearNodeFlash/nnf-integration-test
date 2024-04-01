@@ -1,9 +1,10 @@
 name: NNF Integration-Test
 on:
   schedule:
-    # Time is in UTC - start at 11:00pm CDT
-    - cron: "00 05 * * *"
+    # Time is in UTC - start at 10:00pm CST or 11:00pm CDT
+     - cron: "00 04 * * *"
   workflow_dispatch:
+    # These inputs are only used when running manually
     inputs:
       system:
         description: Which system to run on
@@ -45,16 +46,20 @@ on:
         default: "2m"
       notifySlack:
         description: Report start/results to slack
-        required: true
-        default: true
         type: boolean
+        required: true
+        default: false
 env:
+  # When running as a cron job, these values will be used since there will be no inputs. These
+  # fields match the inputs above.
   TEST_TARGET: simple
   PROCS: 1
   HTIMEOUT: 5m
   LTIMEOUT: 2m
   SYSTEM: htx-1
   ROUNDS: 1
+  NOTIFY_SLACK: "true"
+  # These env vars are used for either type of run
   SLACK_CHANNEL_ID: C043U7PRGGM
   RUN_URL: "<https://github.com/NearNodeFlash/nnf-integration-test/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
 jobs:
@@ -63,8 +68,42 @@ jobs:
     outputs:
       test-result: ${{ steps.int-test.outcome }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Version
+        run: ./git-version-gen
+
+      # If this is a manual run (workflow_dispatch trigger), then override the env vars with the input values.
+      - name: Override TEST_TARGET with manual input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "TEST_TARGET=${{ inputs.testTarget }}" >> $GITHUB_ENV
+      - name: Override PROCS with manual input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "PROCS=${{ inputs.procs }}" >> $GITHUB_ENV
+      - name: Override ROUNDS with manual input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "ROUNDS=${{ inputs.rounds }}" >> $GITHUB_ENV
+      - name: Override LTIMEOUT with manual input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "LTIMEOUT=${{ inputs.lTimeout }}" >> $GITHUB_ENV
+      - name: Override HTIMEOUT with manual input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "HTIMEOUT=${{ inputs.hTimeout }}" >> $GITHUB_ENV
+      - name: Override NOTIFY_SLACK with manual input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "NOTIFY_SLACK=${{ inputs.notifySlack }}" >> $GITHUB_ENV
+
+      # Optionally send a slack message
       - name: Start Slack Message
-        if: ${{ inputs.notifySlack }}
+        if: ${{ env.NOTIFY_SLACK == 'true' }}
         uses: archive/github-actions-slack@master
         id: start-message
         with:
@@ -89,32 +128,8 @@ jobs:
                 }
               },
             ]
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Version
-        run: ./git-version-gen
-      - name: Override TEST_TARGET with manual input
-        if: ${{ inputs != null && inputs.testTarget != null }}
-        run: |
-          echo "TEST_TARGET=${{ inputs.testTarget}}" >> $GITHUB_ENV
-      - name: Override PROCS with manual input
-        if: ${{ inputs != null && inputs.procs != null }}
-        run: |
-          echo "PROCS=${{ inputs.procs }}" >> $GITHUB_ENV
-      - name: Override ROUNDS with manual input
-        if: ${{ inputs != null && inputs.rounds!= null }}
-        run: |
-          echo "ROUNDS=${{ inputs.rounds }}" >> $GITHUB_ENV
-      - name: Override LTIMEOUT with manual input
-        if: ${{ inputs != null && inputs.lTimeout!= null }}
-        run: |
-          echo "LTIMEOUT=${{ inputs.lTimeout }}" >> $GITHUB_ENV
-      - name: Override HTIMEOUT with manual input
-        if: ${{ inputs != null && inputs.hTimeout!= null }}
-        run: |
-          echo "HTIMEOUT=${{ inputs.hTimeout }}" >> $GITHUB_ENV
+        
+      # Setup and Run the Test
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -150,8 +165,10 @@ jobs:
             echo "@@@@@@@@@@@@@@@@@@@@"
             echo ""
           done
+      
+      # Optionally update the slack message with a failure
       - name: Failure Slack Message
-        if: ${{ inputs.notifySlack && failure() }}
+        if: ${{ env.NOTIFY_SLACK == 'true' && failure() }}
         uses: archive/github-actions-slack@master
         with:
           slack-function: update-message
@@ -187,8 +204,9 @@ jobs:
               }
             ]
 
+      # Optionally update the slack message with success 
       - name: Success Slack Message
-        if: ${{ inputs.notifySlack && success() }}
+        if: ${{ env.NOTIFY_SLACK == 'true' && success() }}
         uses: archive/github-actions-slack@master
         with:
           slack-function: update-message
