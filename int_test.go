@@ -106,6 +106,7 @@ var tests = []*T{
 		WithPermissions(1050, 1051).
 		WithLabels("dm").
 		HardwareRequired(),
+	// This test requires the system to have `externalMgs` defined in the default storage profile
 	MakeTest("Lustre with Data Movement",
 		"#DW jobdw type=lustre name=lustre-data-movement capacity=50GB",
 		"#DW copy_in source=/lus/flame/testuser/test.in destination=$DW_JOB_lustre-data-movement/",
