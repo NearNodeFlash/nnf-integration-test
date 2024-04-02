@@ -106,7 +106,6 @@ var tests = []*T{
 		WithPermissions(1050, 1051).
 		WithLabels("dm").
 		HardwareRequired(),
-	// PENDING: Having two lustres in a single test case doesn't work currently until we fix MGS conflict in int-test
 	MakeTest("Lustre with Data Movement",
 		"#DW jobdw type=lustre name=lustre-data-movement capacity=50GB",
 		"#DW copy_in source=/lus/flame/testuser/test.in destination=$DW_JOB_lustre-data-movement/",
@@ -115,7 +114,7 @@ var tests = []*T{
 		WithGlobalLustreFromPersistentLustre("flame", []string{"default"}).
 		WithPermissions(1050, 1051).
 		WithLabels("dm").
-		HardwareRequired().Pending(),
+		HardwareRequired(),
 
 	// Containers - MPI
 	MakeTest("GFS2 with MPI Containers",
