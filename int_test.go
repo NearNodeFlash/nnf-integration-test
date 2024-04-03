@@ -106,7 +106,7 @@ var tests = []*T{
 		WithPermissions(1050, 1051).
 		WithLabels("dm").
 		HardwareRequired(),
-	// PENDING: Having two lustres in a single test case doesn't work currently until we fix MGS conflict in int-test
+	// This test requires the system to have `externalMgs` defined in the default storage profile
 	MakeTest("Lustre with Data Movement",
 		"#DW jobdw type=lustre name=lustre-data-movement capacity=50GB",
 		"#DW copy_in source=/lus/flame/testuser/test.in destination=$DW_JOB_lustre-data-movement/",
@@ -115,7 +115,7 @@ var tests = []*T{
 		WithGlobalLustreFromPersistentLustre("flame", []string{"default"}).
 		WithPermissions(1050, 1051).
 		WithLabels("dm").
-		HardwareRequired().Pending(),
+		HardwareRequired(),
 
 	// Containers - MPI
 	MakeTest("GFS2 with MPI Containers",
@@ -132,10 +132,10 @@ var tests = []*T{
 		"#DW jobdw type=gfs2 name=gfs2-and-global-with-containers-mpi capacity=100GB",
 		"#DW container name=gfs2-and-global-with-containers-mpi profile=example-mpi "+
 			"DW_JOB_foo_local_storage=gfs2-and-global-with-containers-mpi "+
-			"DW_GLOBAL_foo_global_lustre=/lus/sawbill").
+			"DW_GLOBAL_foo_global_lustre=/lus/polly").
 		WithPermissions(1050, 1051).
-		WithPersistentLustre("gfs2-and-global-with-containers-mpi-sawbill").
-		WithGlobalLustreFromPersistentLustre("sawbill", []string{"default"}).
+		WithPersistentLustre("gfs2-and-global-with-containers-polly").
+		WithGlobalLustreFromPersistentLustre("polly", []string{"default"}).
 		WithLabels("mpi", "global-lustre"),
 
 	// Containers - MPI failures
