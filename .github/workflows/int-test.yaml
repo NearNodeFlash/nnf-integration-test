@@ -52,7 +52,7 @@ on:
 env:
   # When running as a cron job, these values will be used since there will be no inputs. These
   # fields match the inputs above.
-  TEST_TARGET: simple
+  TEST_TARGET: full
   PROCS: 1
   HTIMEOUT: 5m
   LTIMEOUT: 2m
