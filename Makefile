@@ -28,6 +28,10 @@ clean:
 test:
 	${GINKGO_RUN} .
 
+# Alias for all the tests
+.PHONY: full
+full: test
+
 # Run one test to ensure system is in working order
 .PHONY: sanity
 sanity:

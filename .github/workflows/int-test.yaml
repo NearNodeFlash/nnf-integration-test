@@ -2,7 +2,7 @@ name: NNF Integration-Test
 on:
   schedule:
     # Time is in UTC - start at 10:00pm CST or 11:00pm CDT
-     - cron: "00 04 * * *"
+    - cron: "00 04 * * *"
   workflow_dispatch:
     # These inputs are only used when running manually
     inputs:
@@ -28,7 +28,7 @@ on:
           - simple
           - dm
           - container
-          - test
+          - full
       rounds:
         description: How many times to run the test target
         type: number
@@ -59,8 +59,10 @@ env:
   SYSTEM: htx-1
   ROUNDS: 1
   NOTIFY_SLACK: "true"
+
   # These env vars are used for either type of run
-  SLACK_CHANNEL_ID: C043U7PRGGM
+  SLACK_CHANNEL_ID: C043U7PRGGM # rabbit-notifications
+  # SLACK_CHANNEL_ID: C06SMGMM3PY # rabbit-notifications-sandbox
   RUN_URL: "<https://github.com/NearNodeFlash/nnf-integration-test/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
 jobs:
   int-test:
@@ -124,11 +126,49 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Run ${{ env.RUN_URL }} started on ${{ runner.name }}\n_triggered via ${{ github.event_name }}_"
+                  "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
                 }
               },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*System*\n${{ env.SYSTEM }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Test Type*\n${{ env.TEST_TARGET }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Num Procs*\n${{ env.PROCS }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Rounds*\n${{ env.ROUNDS }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Status*\n:hourglass: In Progress"
+                  }
+                ]
+              },
+              {
+                "type": "divider"
+              }
             ]
-        
+
       # Setup and Run the Test
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -165,7 +205,7 @@ jobs:
             echo "@@@@@@@@@@@@@@@@@@@@"
             echo ""
           done
-      
+
       # Optionally update the slack message with a failure
       - name: Failure Slack Message
         if: ${{ env.NOTIFY_SLACK == 'true' && failure() }}
@@ -189,22 +229,50 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Run ${{ env.RUN_URL }} started on ${{ runner.name }}\n_triggered via ${{ github.event_name }}_"
+                  "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
                 }
               },
               {
                 "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": ":red_circle: Test Failed"
-                }
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*System*\n${{ env.SYSTEM }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Test Type*\n${{ env.TEST_TARGET }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Num Procs*\n${{ env.PROCS }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Rounds*\n${{ env.ROUNDS }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Status*\n:red_circle: Test Failed"
+                  }
+                ]
               },
               {
                 "type": "divider"
               }
             ]
 
-      # Optionally update the slack message with success 
+      # Optionally update the slack message with success
       - name: Success Slack Message
         if: ${{ env.NOTIFY_SLACK == 'true' && success() }}
         uses: archive/github-actions-slack@master
@@ -227,15 +295,43 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Run ${{ env.RUN_URL }} started on ${{ runner.name }}\n_triggered via ${{ github.event_name }}_"
+                  "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
                 }
               },
               {
                 "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": ":green_circle: Test Passed"
-                }
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*System*\n${{ env.SYSTEM }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Test Type*\n${{ env.TEST_TARGET }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Num Procs*\n${{ env.PROCS }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Rounds*\n${{ env.ROUNDS }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Status*\n:green_circle: Test Passed"
+                  }
+                ]
               },
               {
                 "type": "divider"
