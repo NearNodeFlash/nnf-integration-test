@@ -82,6 +82,9 @@ type T struct {
 	// Helper pods that run during a test to do extra work (e.g. data
 	// movement). These need to be cleaned up and tracked.
 	helperPods []*corev1.Pod
+
+	// Compute nodes that were assigned to the test. This is determined at test runtime.
+	computes *dwsv1alpha2.Computes
 }
 
 func MakeTest(name string, directives ...string) *T {
