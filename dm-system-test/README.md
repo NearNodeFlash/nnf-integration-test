@@ -8,6 +8,11 @@ being used. This framework packaged as part of this system test for portability.
 These tests are a Work In Progress (WIP). These started as a way to verify the behavior of the
 destination mkdir and index mount directory features of data movement with hopes to expand.
 
+## Getting Started
+
+To run the tests, simply run `make tests` on the appropriate system. See the Requirements section
+for more detail.
+
 ## Requirements
 
 Data Movement System Tests need to be run on a system where flux is available and the target
@@ -23,12 +28,8 @@ Bats is a TAP testing framework for bash. This allows us to write a large number
 verify the behavior of NNF software. You can read more about this testing framework here:
 <https://bats-core.readthedocs.io/en/stable/>
 
-To update bats locally, clone the repo and install it to the `bats/` directory in this repo:
-
-    ```shell
-    git clone https://github.com/bats-core/bats-core.git
-    ./install.sh $HOME/dm-system-test/bats/
-    ```
+Bats is installed locally. The `install_bats.sh` script downloads and installs it locally to the
+`bats/` directory. `make init` will do this for you.
 
 ## copy-in-copy-out tests
 
