@@ -41,6 +41,10 @@ fi
 if [[ ${NUM_COMPUTES} -gt 0 ]]; then
     echo "Checking for index mount directories"
 
+    # remove any escaping or quotes from the path
+    COPY_OUT=${COPY_OUT//\'/}
+    COPY_OUT=${COPY_OUT//\\/}
+
     # verify there are $NUM_COMPUTES directories/files
     LS_OUTPUT=$(/bin/ls -l ${COPY_OUT})
     if ! echo "${LS_OUTPUT}" | wc -l | grep "${NUM_COMPUTES}"; then
