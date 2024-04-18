@@ -74,6 +74,7 @@ func VerifyCopyOut(ctx context.Context, k8sClient client.Client, t *T, o TOption
 	numComputes := "0"
 	if strings.Contains(lus.out, "*/") {
 		numComputes = strconv.Itoa(len(t.computes.Data))
+		lus.out = strings.ReplaceAll(lus.out, "*", "\\*") // escape the asterisk so bash doesn't glob
 	}
 
 	By("Starting copy-out pod and verifying copy out")

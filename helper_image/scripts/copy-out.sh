@@ -9,11 +9,12 @@ function usage() {
     echo
     echo "Syntax: copy-out.sh FILE_IN FILE_OUT <NUM_COMPUTES>"
     echo
-    echo "Set <NUM_COMPUTES> to 0 when index mount directories are not expected"
+    echo "Set <NUM_COMPUTES> to 0 when index mount directories are not expected. When expected, the "
+    echo "path should include an asterik to represent the directories it needs to be escaped (\*)"
     echo
     echo "example:"
     echo "copy-out.sh /lus/global/testuser/test.in /lus/global/testuser/test.out 0"
-    echo "copy-out.sh /lus/global/testuser/test.in /lus/global/testuser/*/test.out 4"
+    echo "copy-out.sh /lus/global/testuser/test.in /lus/global/testuser/\*/test.out 4"
     echo
 }
 
@@ -41,7 +42,7 @@ if [[ ${NUM_COMPUTES} -gt 0 ]]; then
     echo "Checking for index mount directories"
 
     # verify there are $NUM_COMPUTES directories/files
-    LS_OUTPUT=$(/bin/ls -l "${COPY_OUT}")
+    LS_OUTPUT=$(/bin/ls -l ${COPY_OUT})
     if ! echo "${LS_OUTPUT}" | wc -l | grep "${NUM_COMPUTES}"; then
         echo "missing index directories, expected ${NUM_COMPUTES}:"
         /bin/ls -l "${COPY_OUT}"
@@ -52,7 +53,7 @@ if [[ ${NUM_COMPUTES} -gt 0 ]]; then
     echo "${COPY_IN}: ${COPY_IN_MD5SUM}"
 
     # make sure each checksum is the same
-    md5sum "${COPY_OUT}" | while read -r line; do
+    md5sum ${COPY_OUT} | while read -r line; do
         SUM=$(echo "${line}" | awk '{print $1}')
         FILE=$(echo "${line}" | awk '{print $2}')
         echo "${FILE}: ${SUM}"
