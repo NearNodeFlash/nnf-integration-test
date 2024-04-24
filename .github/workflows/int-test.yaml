@@ -337,3 +337,20 @@ jobs:
                 "type": "divider"
               }
             ]
+  dm-system-test:
+    needs: int-test
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ${{ inputs.system || 'htx-1' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Version
+        run: ./git-version-gen
+      - name: Whoami
+        run: id
+      - name: Run dm-system-test
+        run: |
+          cd dm-system-test
+          make all
