@@ -23,8 +23,6 @@
 # table is then converted to json, which is used for this test. `convert_table.py` is used to perform
 # that converstion into `copy-in-copy-out.json`, which is used by this file.
 
-# number of computes
-N=4
 
 # source the files by doing a copy_in
 # the source files are created with `create-testfiles.sh`
@@ -38,6 +36,11 @@ num_tests=$(jq length $tests_file)
 
 # Default to gfs2, but allow FS_TYPE env var to override
 fs_type="${FS_TYPE:-gfs2}"
+
+# Number of compute nodes; default to 4
+if [[ -z N ]]; then
+    N=4
+fi
 
 # Provide a way to run sanity or a protion of the tests (e.g. NUM_TESTS=1)
 if [[ -v NUM_TESTS ]]; then
