@@ -44,6 +44,11 @@ on:
         type: string
         required: true
         default: "2m"
+      runDMSystemTest:
+        description: Run dm-system-test
+        type: boolean
+        required: true
+        default: false
       notifySlack:
         description: Report start/results to slack
         type: boolean
@@ -339,7 +344,7 @@ jobs:
             ]
   dm-system-test:
     needs: int-test
-    if: ${{ github.event_name == 'schedule' }}
+    if: ${{ github.event_name == 'schedule' || inputs.runDMSystemTest == true }}
     runs-on: ${{ inputs.system || 'htx-1' }}
     steps:
       - name: Checkout
@@ -348,9 +353,13 @@ jobs:
           fetch-depth: 0
       - name: Version
         run: ./git-version-gen
-      - name: Whoami
+      - name: View Permissions
         run: id
+      - name: Install Bats
+        run: |
+          cd system-test
+          make init
       - name: Run dm-system-test
         run: |
-          cd dm-system-test
-          make all
+          cd system-test
+          make dm

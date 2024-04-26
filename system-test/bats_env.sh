@@ -1,3 +1,5 @@
+# This file is meant to be sourced (.) to update PATH to include the local install of bats.
+
 # Copyright 2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
@@ -14,14 +16,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Get the directory of this script
 
-all: init test
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BATS_DIR=${SCRIPT_DIR}/bats/bin
 
-init:
-	./install_bats.sh
-
-test:
-	./test-copy-in-copy-out.sh
-
-clean:
-	rm -r ./bats
+# Check if the directory is already in PATH
+if [[ ":$PATH:" != *":$BATS_DIR:"* ]]; then
+    # Add the directory to PATH
+    export PATH="$BATS_DIR:$PATH"
+    echo "Added $BATS_DIR to PATH"
+else
+    echo "$BATS_DIR is already in PATH"
+fi

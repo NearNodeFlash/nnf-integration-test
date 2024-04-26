@@ -20,21 +20,27 @@
 # This file is repsonsible for creating the environment needed to run the copy-in-copy-out tests on
 # a global lustre filesystem that is mounted on `/lus/global`
 
-mkdir -p /lus/global/testdir/src/job/job2
-mkdir -p /lus/global/testdir/src/job2
-echo "hello_there" >/lus/global/testdir/src/job/data.out
-cp /lus/global/testdir/src/job/data.out /lus/global/testdir/src/job/data2.out
-cp /lus/global/testdir/src/job/data.out /lus/global/testdir/src/job/job2/data3.out
-cp /lus/global/testdir/src/job/data.out /lus/global/testdir/src/job2/data.out
-cp /lus/global/testdir/src/job/data.out /lus/global/testdir/src/job2/data2.out
+if [[ -z $1 ]]; then
+    echo "testdir must be supplied"
+    exit 1
+fi
+TESTDIR=$1
 
-mkdir -p /lus/global/testdir/dest
+mkdir -p ${TESTDIR}/src/job/job2
+mkdir -p ${TESTDIR}/src/job2
+echo "hello_there" >${TESTDIR}/src/job/data.out
+cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job/data2.out
+cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job/job2/data3.out
+cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job2/data.out
+cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job2/data2.out
+
+mkdir -p ${TESTDIR}/dest
 
 # let the users group own testdir
-chown -R root:users /lus/global/testdir
+chown -R ${USER}:users ${TESTDIR}
 
 # make sure src isn't group writeable though (to protect it)
-chmod -R g-w /lus/global/testdir/src
+chmod -R g-w ${TESTDIR}/src
 
 # make dest group writeable
-chmod -R g+w /lus/global/testdir/dest/
+chmod -R g+w ${TESTDIR}/dest/
