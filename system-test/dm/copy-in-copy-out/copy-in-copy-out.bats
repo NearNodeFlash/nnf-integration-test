@@ -1,4 +1,4 @@
-#!../bats/bin/bats
+#!/usr/bin/env bats
 
 # Copyright 2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
@@ -23,54 +23,63 @@
 # table is then converted to json, which is used for this test. `convert_table.py` is used to perform
 # that converstion into `copy-in-copy-out.json`, which is used by this file.
 
-
-# source the files by doing a copy_in
-# the source files are created with `create-testfiles.sh`
-COPY_IN_SRC=/lus/global/testdir/src/
-
-# destination directory root (e.g. /lus/global/user)
-DEST_DIR=/lus/global/testdir/dest
+# TESTDIR must be set - this is used as the root directory for the src/dest
+# directories. This must live on global lustre (e.g. /lus/global/<user>/dm-system-test)
+if [[ -z "${TESTDIR}" ]]; then
+    echo "Error: TESTDIR must be set!" >&2
+    exit 1
+fi
 
 tests_file="copy-in-copy-out.json"
-num_tests=$(jq length $tests_file)
 
 # Default to gfs2, but allow FS_TYPE env var to override
 fs_type="${FS_TYPE:-gfs2}"
 
 # Number of compute nodes; default to 4
-if [[ -z N ]]; then
+if [[ -z "${N}" ]]; then
     N=4
 fi
 
-# Provide a way to run sanity or a protion of the tests (e.g. NUM_TESTS=1)
-if [[ -v NUM_TESTS ]]; then
-    num_tests=$NUM_TESTS
+# Provide a way to run sanity or a portion of the tests (e.g. NUM_TESTS=1)
+if [[ -z "${NUM_TESTS}" ]]; then
+    NUM_TESTS=$(jq length $tests_file)
 fi
 
+# Optionally use copy_offload to perform the copy_out
 copy_out_method="out"
-if [[ -v COPY_OFFLOAD ]]; then
+if [[ -v "${COPY_OFFLOAD}" ]]; then
     copy_out_method="offload"
 fi
 
 # Read the test file and create a bats test for each entry
-for ((i = 0; i < num_tests; i++)); do
+for ((i = 0; i < NUM_TESTS; i++)); do
     test_name=$(cat $tests_file | jq -r ".[$i].test")-$fs_type
     bats_test_function --description "copy-in-copy-$copy_out_method: $test_name" -- test_copy_in_copy_out "$i"
 done
 
 function setup() {
-    rm -rf /lus/global/testdir/dest/*
+    ./create-testfiles.sh ${TESTDIR}
+    rm -rf ${TESTDIR}/dest/*
 }
 
-# function teardown() {
-#     rm -rf $USER_DIR/*
-# }
+function teardown() {
+    # clean up if it succeeded, otherwise leave it around for inspection (if no other tests run afterwards)
+    if [[ -v "${BATS_TEST_COMPLETED}" ]]; then
+        rm -rf ${TESTDIR}/dest/*
+    fi
+}
 
 function test_copy_in_copy_out() {
     local idx=$1
     local src=$(cat $tests_file | jq -r ".[$idx].src")
     local dest=$(cat $tests_file | jq -r ".[$idx].dest")
     local expected=$(cat $tests_file | jq -r ".[$idx].expected")
+
+    local copy_in_src=${TESTDIR}/src/
+
+    # expand the $TESTDIR variable in dest/expected vars
+    dest="$(eval echo "$dest")"
+    expected="$(eval echo "$expected")"
 
     # Use copy offload to do the copy_out (copy_in isn't supported)
     if [[ "$copy_out_method" == "offload" ]]; then
@@ -80,13 +89,13 @@ function test_copy_in_copy_out() {
         echo "AFTER SOURCE: $src"
         flux run -l -N${N} --wait-event=clean --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
-            #DW copy_in source=$COPY_IN_SRC destination=\$DW_JOB_copyout-test" \
+            #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test" \
             bash -c "hostname && \
                 dm-client-go -source=$src -destination=$dest -profile=no-xattr"
     else
         flux run -l -N${N} --wait-event=clean --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
-            #DW copy_in source=$COPY_IN_SRC destination=\$DW_JOB_copyout-test \
+            #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test \
             #DW copy_out source=$src destination=$dest profile=no-xattr" \
             bash -c "hostname"
     fi

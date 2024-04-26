@@ -21,13 +21,25 @@
 
 set -e
 
+# default to /lus/global/<user>/dm-system-test
+if [[ -z "${GLOBAL_LUSTRE_ROOT}" ]]; then
+    GLOBAL_LUSTRE_ROOT=/lus/global
+fi
+
+# for now, expect the user directory to exist in global lustre root directory
+export TESTDIR=${GLOBAL_LUSTRE_ROOT}/${USER}/dm-system-test
+
 pushd copy-in-copy-out
 
+# turn markdown table into json
+python3 convert_table.py copy-in-copy-out.md copy-in-copy-out.json
+
+# Run copy_out tests for each filesystem
 FS_TYPE=gfs2 ./copy-in-copy-out.bats
 FS_TYPE=xfs ./copy-in-copy-out.bats
 FS_TYPE=lustre ./copy-in-copy-out.bats
 
-# Run the same with copy offload
+# Run the same with copy offload with supported filesystems (gfs2->lustre, lustre->lustre)
 FS_TYPE=gfs2 COPY_OFFLOAD=y ./copy-in-copy-out.bats
 FS_TYPE=lustre COPY_OFFLOAD=y ./copy-in-copy-out.bats
 
