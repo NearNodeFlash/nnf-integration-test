@@ -95,6 +95,9 @@ func (t *T) setup(ctx context.Context, k8sClient client.Client, workflow *dwsv1a
 		}
 
 		Expect(k8sClient.Update(ctx, computes)).To(Succeed())
+
+		// Assign these for use elsewhere
+		t.computes = computes
 	}
 
 	By("Assigns Servers")
