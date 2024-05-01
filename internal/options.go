@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -234,8 +235,13 @@ func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []strin
 	}
 
 	// For copy_in/copy_out, pull the source/destination paths and add them to global lustre
+	var fsType string
 	for _, directive := range t.directives {
 		args, _ := dwdparse.BuildArgsMap(directive)
+
+		if len(args["type"]) != 0 {
+			fsType = args["type"]
+		}
 
 		if args["command"] == "copy_in" {
 			if path, found := args["source"]; found {
@@ -243,7 +249,13 @@ func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []strin
 			}
 		} else if args["command"] == "copy_out" {
 			if path, found := args["destination"]; found {
-				t.options.globalLustre.out = path
+				// Account for index mount directories in the path. This only works for file-file
+				// data movement to assume where the '*' goes for the index mount directories.
+				if fsType == "gfs2" || fsType == "xfs" {
+					t.options.globalLustre.out = filepath.Join(filepath.Dir(path), "*", filepath.Base(path))
+				} else {
+					t.options.globalLustre.out = path
+				}
 			}
 		}
 	}

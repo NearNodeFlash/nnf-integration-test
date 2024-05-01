@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,10 +69,19 @@ func SetupCopyIn(ctx context.Context, k8sClient client.Client, t *T, o TOptions)
 func VerifyCopyOut(ctx context.Context, k8sClient client.Client, t *T, o TOptions) {
 	lus := t.options.globalLustre
 
+	// Set numComputes to the number of compute nodes if index mount directories are expected.
+	// Otherwise use 0 for lustre-lustre.
+	numComputes := "0"
+	if strings.Contains(lus.out, "*/") {
+		numComputes = strconv.Itoa(len(t.computes.Data))
+		lus.out = strings.ReplaceAll(lus.out, "*", "\\*") // escape the asterisk so bash doesn't glob
+	}
+
 	By("Starting copy-out pod and verifying copy out")
 	runHelperPod(ctx, k8sClient, t, "copy-out", "/copy-out.sh", []string{
 		lus.in,
 		lus.out,
+		numComputes,
 	})
 }
 
