@@ -5,6 +5,9 @@ ifdef P
 PARALLEL_OPT:=-procs=${P}
 endif
 
+# Add go bin to path (for ginkgo)
+export PATH := $(HOME)/go/bin:$(PATH)
+
 # Base command to start the tests with ginkgo
 GINKGO_RUN?=CGO_ENABLED=0 ginkgo run ${PARALLEL_OPT} --v
 
@@ -22,6 +25,10 @@ vet:
 .PHONY: clean
 clean:
 	kubectl delete namespace nnf-system-needs-triage --ignore-not-found
+
+.PHONY: init
+init:
+	./ginkgo_install.sh
 
 # Run all the tests
 .PHONY: test

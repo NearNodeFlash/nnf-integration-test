@@ -180,15 +180,8 @@ jobs:
         with:
           go-version-file: "go.mod"
           cache: true
-      - name: Setup Ginkgo
-        run: >
-          GINKGO_MOD=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $1 "@" $2}')
-          GOMEGA_VER=$(grep "github.com/onsi/gomega" go.mod | awk '{print $2}')
-          bash -c 'echo Using $GINKGO_MOD and gomega $GOMEGA_VER && go get $GINKGO_MOD && go get github.com/onsi/gomega@$GOMEGA_VER'
-      - name: Setup Ginkgo CLI
-        run: >
-          GINKGO_CLI_VER=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $2}')
-          bash -c 'go install github.com/onsi/ginkgo/v2/ginkgo@$GINKGO_CLI_VER'
+      - name: Install Ginkgo and Ginkgo CLI
+        run: make init
       - name: Run int-test (P=${{ env.P }} ${{ env.TEST_TARGET }}) ${{ env.ROUNDS }} time(s) on ${{ env.SYSTEM }}
         id: int-test
         shell: bash
