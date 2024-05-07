@@ -19,6 +19,8 @@
 
 # Run all of the copy-in-copy-out tests for all filesystems
 
+# TODO: create dedicated job directories so bats -j can be used without collision
+
 set -e
 
 # default to /lus/global/<user>/dm-system-test
