@@ -15,24 +15,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# default the global lustre root directory if not set
+# Default to 4 compute nodes
+N ?= 4
+
+# Default to serial execution; Anything higher than 1 requires GNU parallel to be installed
+J ?= 1
+
+# Default the global lustre root directory. Tests that use global lustre expect a writeable user
+# directory at GLOBAL_LUSTRE_ROOT (e.g. /lus/global/myuser).
 GLOBAL_LUSTRE_ROOT ?= /lus/global
 
 # add bats to PATH
-CWD := $(shell pwd)
-export PATH := $(CWD)/bats/bin:$(PATH)
+export PATH := $(shell ./bats_env.sh):$(PATH)
 
 .PHONY: all init dm clean env
 
-all: init dm
+all: init test dm
 
 init:
 	./bats_install.sh
 
-env:
-	. ./bats_env.sh
+test:
+	bats -j $(J) .
 
-dm: env
+dm:
 	echo "$(PATH)"
 	cd dm; ./test-copy-in-copy-out.sh
 
