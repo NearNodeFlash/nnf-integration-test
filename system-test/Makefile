@@ -25,22 +25,42 @@ J ?= 1
 # directory at GLOBAL_LUSTRE_ROOT (e.g. /lus/global/myuser).
 GLOBAL_LUSTRE_ROOT ?= /lus/global
 
+# Default to no flux queue
+Q ?=
+
+# Default bats command
+BATS = bats -j $(J)
+
 # add bats to PATH
 export PATH := $(shell ./bats_env.sh):$(PATH)
 
-.PHONY: all init dm clean env
-
+.PHONY: all
 all: init test dm
 
+.PHONY: init
 init:
 	./bats_install.sh
 
-test:
-	bats -j $(J) .
+.PHONY: sanity
+sanity:
+	$(BATS) --filter-tags tag:sanity .
 
+.PHONY: simple
+simple:
+	$(BATS) --filter-tags tag:simple .
+
+%::
+	$(BATS) --filter-tags tag:$@ .
+
+.PHONY: test
+test:
+	$(BATS) .
+
+.PHONY: dm
 dm:
 	echo "$(PATH)"
 	cd dm; ./test-copy-in-copy-out.sh
 
+.PHONY: clean
 clean:
 	rm -r ./bats
