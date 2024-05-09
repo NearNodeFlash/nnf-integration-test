@@ -49,8 +49,7 @@ sanity:
 simple:
 	$(BATS) --filter-tags tag:simple .
 
-.PHONY: %
-%:
+%::
 	$(BATS) --filter-tags tag:$@ .
 
 .PHONY: test
