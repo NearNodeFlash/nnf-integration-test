@@ -19,7 +19,7 @@ on:
         default: 1
         type: number
       testTarget:
-        description: Which test target to run
+        description: Which int-test target to run
         type: choice
         required: true
         default: "simple"
@@ -44,6 +44,11 @@ on:
         type: string
         required: true
         default: "2m"
+      runSystemTest:
+        description: Run system-test
+        type: boolean
+        required: true
+        default: false
       runDMSystemTest:
         description: Run dm-system-test
         type: boolean
@@ -335,9 +340,36 @@ jobs:
                 "type": "divider"
               }
             ]
-  dm-system-test:
+
+  # Only run system test after int-test is successful. If int-test fails, it can leave around
+  # artifacts.
+  system-test:
     needs: int-test
-    if: ${{ github.event_name == 'schedule' || inputs.runDMSystemTest == true }}
+    if: ${{ github.event_name == 'schedule' || inputs.runSystemTest == true }}
+    runs-on: ${{ inputs.system || 'htx-1' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Version
+        run: ./git-version-gen
+      - name: View Permissions
+        run: id
+      - name: Install Bats
+        run: |
+          cd system-test
+          make init
+      - name: Run system-test
+        run: |
+          cd system-test
+          make test
+
+  # Ensure dm-system-test runs after system-test. system-test is optional, so we need to use
+  # always() to ensure this runs even when system-test does not.
+  dm-system-test:
+    needs: system-test
+    if: ${{ always() && ( github.event_name == 'schedule' || inputs.runDMSystemTest == true ) }}
     runs-on: ${{ inputs.system || 'htx-1' }}
     steps:
       - name: Checkout
