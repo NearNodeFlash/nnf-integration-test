@@ -51,6 +51,22 @@ if [[ -v "${COPY_OFFLOAD}" ]]; then
     copy_out_method="offload"
 fi
 
+# Flux command
+FLUX="flux run -l -N${N} --wait-event=clean"
+
+# Use a Flux queue
+if [ "${Q}" != "" ]; then
+    FLUX+=" -q ${Q}"
+fi
+
+# Require specific rabbits
+if [ "${R}" != "" ]; then
+    FLUX+=" --requires=hosts:${R}"
+fi
+
+# TODO remove this
+echo ${FLUX}
+
 # Read the test file and create a bats test for each entry
 for ((i = 0; i < NUM_TESTS; i++)); do
     test_name=$(cat $tests_file | jq -r ".[$i].test")-$fs_type
@@ -87,13 +103,13 @@ function test_copy_in_copy_out() {
         echo "SOURCE: $src"
         src="${src//-/_}"
         echo "AFTER SOURCE: $src"
-        flux run -l -N${N} --wait-event=clean --setattr=dw="\
+        ${FLUX} --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
             #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test" \
             bash -c "hostname && \
                 dm-client-go -source=$src -destination=$dest -profile=no-xattr"
     else
-        flux run -l -N${N} --wait-event=clean --setattr=dw="\
+        ${FLUX} --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
             #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test \
             #DW copy_out source=$src destination=$dest profile=no-xattr" \
