@@ -45,6 +45,8 @@ the command line or changed in the `Makefile`.
 
 - `N`: Number of compute nodes to request via `flux -N`
 - `J`: Number of parallel tests to run via `bats -j`
+- `Q`: Which flux queue to use to submit the job via `flux -q`
+- `R`: Use `flux --requires=hosts[R]` to pass hosts constraint
 - `GLOBAL_LUSTRE_ROOT`: For tests that require global lustre, this is the file system path where
 user directories are located (e.g. `/lus/global/myuser`)
 

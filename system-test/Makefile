@@ -28,6 +28,9 @@ GLOBAL_LUSTRE_ROOT ?= /lus/global
 # Default to no flux queue
 Q ?=
 
+# No specfic nodes (with flux --requires)
+R ?=
+
 # Default bats command
 BATS = bats -j $(J)
 

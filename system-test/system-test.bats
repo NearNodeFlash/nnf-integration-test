@@ -28,9 +28,6 @@ if [[ -z "${N}" ]]; then
     N=4
 fi
 
-# Command to run on the compute node via flux
-COMPUTE_CMD='bash -c "hostname"'
-
 # Flux command
 FLUX="flux run -l -N${N} --wait-event=clean"
 
@@ -38,6 +35,17 @@ FLUX="flux run -l -N${N} --wait-event=clean"
 if [ "${Q}" != "" ]; then
     FLUX+=" -q ${Q}"
 fi
+
+# Require specific rabbits
+if [ "${R}" != "" ]; then
+    FLUX+=" --requires=hosts:${R}"
+fi
+
+# Command to run on the compute node via flux
+# TODO try set -x
+COMPUTE_CMD='hostname'
+
+echo ${FLUX}
 
 #----------------------------------------------------------
 # Simple Tests
@@ -163,7 +171,7 @@ fi
         #DW jobdw type=gfs2 name=containers-gfs2-global-lustre capacity=100GB \
         #DW container name=containers-gfs2-global-lustre profile=example-success \
             DW_JOB_foo_local_storage=containers-gfs2-global-lustre \
-			DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
+            DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
         ${COMPUTE_CMD}
 }
 
@@ -173,7 +181,7 @@ fi
         #DW jobdw type=gfs2 name=containers-gfs2-global-lustre-mpi capacity=100GB \
         #DW container name=containers-gfs2-global-lustre-mpi profile=example-mpi \
             DW_JOB_foo_local_storage=containers-gfs2-global-lustre-mpi \
-			DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
+            DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
         ${COMPUTE_CMD}
 }
 
@@ -183,7 +191,7 @@ fi
         #DW jobdw type=lustre name=containers-lustre-global-lustre capacity=100GB \
         #DW container name=containers-lustre-global-lustre profile=example-success \
             DW_JOB_foo_local_storage=containers-lustre-global-lustre \
-			DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
+            DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
         ${COMPUTE_CMD}
 }
 
@@ -193,7 +201,7 @@ fi
         #DW jobdw type=lustre name=containers-lustre-global-lustre-mpi capacity=100GB \
         #DW container name=containers-lustre-global-lustre-mpi profile=example-mpi \
             DW_JOB_foo_local_storage=containers-lustre-global-lustre-mpi \
-			DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
+            DW_GLOBAL_foo_global_lustre=${GLOBAL_LUSTRE_ROOT}" \
         ${COMPUTE_CMD}
 }
 
