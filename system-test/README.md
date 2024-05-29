@@ -33,15 +33,15 @@ It can also be added to your path via `source bats_env.sh`.
 
 To install bats and run system test:
 
-```shell
-make init
-make test
-```
+    ```shell
+    make init
+    make test
+    ```
 
 ## Customization
 
 There are a number of ways to customize a run using environment variables. They can be supplied at
-the command line or changed in the `Makefile`.
+the command line or provided with a `env` file. See `env.example` for details.
 
 - `N`: Number of compute nodes to request via `flux -N`
 - `J`: Number of parallel tests to run via `bats -j`
@@ -50,7 +50,10 @@ the command line or changed in the `Makefile`.
 - `GLOBAL_LUSTRE_ROOT`: For tests that require global lustre, this is the file system path where
 user directories are located (e.g. `/lus/global/myuser`)
 
-## dm-system-test
+If no environment variables are supplied via either of these methods, then the defaults defined in
+the `Makefile` are used.
+
+## `dm-system-test`
 
 These are tests that dive into the specifics of Data Movement. The current focus is to verify the
 correct paths (for index mount directories) when doing copy-in and copy-out between ephemeral
@@ -58,11 +61,11 @@ filesystems and global lustre.
 
 To run:
 
-```shell
-make dm
-```
+    ```shell
+    make dm
+    ```
 
-## copy-in-copy-out tests
+## `copy-in-copy-out` tests
 
 These tests make use of a markdown table to define all the expected behavior when performing data
 movement when it comes to verifying the destination mkdir directory and index mount directories. The
