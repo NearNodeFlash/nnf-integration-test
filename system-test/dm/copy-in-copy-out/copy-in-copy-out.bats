@@ -64,9 +64,6 @@ if [ "${R}" != "" ]; then
     FLUX+=" --requires=hosts:${R}"
 fi
 
-# TODO remove this
-echo ${FLUX}
-
 # Read the test file and create a bats test for each entry
 for ((i = 0; i < NUM_TESTS; i++)); do
     test_name=$(cat $tests_file | jq -r ".[$i].test")-$fs_type
