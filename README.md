@@ -14,8 +14,8 @@ so that it is built against the same version of the code that has been deployed 
 system.
 
 `nnf-integation-test` does not run workflows through `flux` and is intended to provide a deeper
-level of testing since it can easily retrieve NNF resources in kubernetes. By default, **this test
-will use all avaialable computes/rabbits in the system configuration**. It is best for smaller
+level of testing, since it can easily retrieve NNF resources in kubernetes. By default, **this test
+uses all available computes/rabbits in the system configuration**. It is best for smaller
 systems to do localized testing.
 
 NNF test infrastructure and individualized tests reside in the [/internal](./internal/) directory.
@@ -30,7 +30,7 @@ go test -v ./test/... -ginkgo.fail-fast -ginkgo.v
 ```
 
 Ginkgo also provides the [Ginkgo CLI](https://onsi.github.io/ginkgo/#ginkgo-cli-overview) that can
-be used for enhanced test features like parallelization, randomization, and filter.
+be used for enhanced test features like parallelization, randomization, and filtering.
 
 ### Test Definitions
 
@@ -39,7 +39,7 @@ of a workload manager and should operate only on DWS resources when possible.
 
 ### Test Options
 
-[Test Options](./internal/options.go) allow the user extend test definitions with various options.
+[Test Options](./internal/options.go) allow the user to extend test definitions with various options.
 Administrative controls, like creating NNF Storage Profiles or NNF Container profiles, configuring a
 global Lustre File System, or extracting Lustre parameters from a persistent Lustre instance, are
 some example test options.
