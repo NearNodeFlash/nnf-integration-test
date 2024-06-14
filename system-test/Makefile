@@ -14,27 +14,69 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-# default the global lustre root directory if not set
+# If present, load the env file (ignored by git) to override the variables
+# exported below. This is especially useful for setting Q and R on systems.
+ifneq (,$(wildcard ./env))
+	include env
+	export
+endif
+
+# Default to 4 compute nodes
+N ?= 4
+export N
+
+# Default to serial execution; Anything higher than 1 requires GNU parallel to be installed
+J ?= 1
+export J
+
+# Default the global lustre root directory. Tests that use global lustre expect a writeable user
+# directory at GLOBAL_LUSTRE_ROOT (e.g. /lus/global/myuser).
 GLOBAL_LUSTRE_ROOT ?= /lus/global
+export GLOBAL_LUSTRE_ROOT
+
+# Default to no flux queue
+Q ?=
+export Q
+
+# No specfic nodes (with flux --requires)
+R ?=
+export R
 
 # add bats to PATH
-CWD := $(shell pwd)
-export PATH := $(CWD)/bats/bin:$(PATH)
+export PATH := $(shell ./bats_env.sh):$(PATH)
 
-.PHONY: all init dm clean env
+# Default bats command
+BATS = bats -j $(J)
 
-all: init dm
+.PHONY: all
+all: init test dm
 
+.PHONY: init
 init:
 	./bats_install.sh
 
-env:
-	. ./bats_env.sh
+.PHONY: sanity
+sanity:
+	$(BATS) --filter-tags tag:sanity .
 
-dm: env
+.PHONY: simple
+simple:
+	$(BATS) --filter-tags tag:simple .
+
+%::
+	$(BATS) --filter-tags tag:$@ .
+
+.PHONY: test
+test:
+	$(BATS) .
+
+.PHONY: dm
+dm:
 	echo "$(PATH)"
 	cd dm; ./test-copy-in-copy-out.sh
 
+.PHONY: clean
 clean:
 	rm -r ./bats

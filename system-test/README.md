@@ -1,26 +1,22 @@
-# dm-system-test
+# nnf-system-test
 
-This is a system level (e.g. flux) test suite for verifying NNF Data Movement. The Flux workflow
-manager is used to drive the testing of data movement. Since interaction with Flux is largely at the
-shell level, the tests are written in bash. To drive that, a Bash Automated Testing System (Bats) is
-being used. This framework packaged as part of this system test for portability.
-
-These tests are a Work In Progress (WIP). These started as a way to verify the behavior of the
-destination mkdir and index mount directory features of data movement with hopes to expand.
-
-## Getting Started
-
-To run the tests, simply run `make tests` on the appropriate system. See the Requirements section
-for more detail.
+This is a system level (e.g. flux) test suite for verifying NNF Workflows. The Flux workflow manager
+is used to drive the management of NNF Worfklows. Since interaction with Flux is largely at the
+shell level, the tests are written in bash. To drive that, Bash Automated Testing System (Bats) is
+being used. This framework is installed as part of this system test for portability.
 
 ## Requirements
 
-Data Movement System Tests need to be run on a system where flux is available and the target
-destination global lustre filesystem must also be mounted on the same system in order to verify the
-results of the data movement operation. For HPE systems, this means these test can be ran on:
+System Tests need to be run on a system where flux is available and the target destination global
+lustre filesystem must also be mounted on the same system in order to verify workfows that use
+global user (e.g. user container tests, the results of data movement operations). For HPE systems,
+this means these tests can run on:
 
     - htx-lustre
     - texas-lustre
+
+To support parallel execution of workflows, GNU `parallel` must be installed as it is a requirement
+of `bats`.
 
 ## Bats Framework
 
@@ -28,10 +24,48 @@ Bats is a TAP testing framework for bash. This allows us to write a large number
 verify the behavior of NNF software. You can read more about this testing framework here:
 <https://bats-core.readthedocs.io/en/stable/>
 
-Bats is installed locally. The `install_bats.sh` script downloads and installs it locally to the
-`bats/` directory. `make init` will do this for you.
+Bats is installed locally. The `bats_install.sh` script downloads and installs it locally to the
+`bats/` directory. `make init` will do this for you. `make clean` will remove it.
 
-## copy-in-copy-out tests
+It can also be added to your path via `source bats_env.sh`.
+
+## Getting Started
+
+To install bats and run system test:
+
+    ```shell
+    make init
+    make test
+    ```
+
+## Customization
+
+There are a number of ways to customize a run using environment variables. They can be supplied at
+the command line or provided with a `env` file. See `env.example` for details.
+
+- `N`: Number of compute nodes to request via `flux -N`
+- `J`: Number of parallel tests to run via `bats -j`
+- `Q`: Which flux queue to use to submit the job via `flux -q`
+- `R`: Use `flux --requires=hosts[R]` to pass hosts constraint
+- `GLOBAL_LUSTRE_ROOT`: For tests that require global lustre, this is the file system path where
+user directories are located (e.g. `/lus/global/myuser`)
+
+If no environment variables are supplied via either of these methods, then the defaults defined in
+the `Makefile` are used.
+
+## `dm-system-test`
+
+These are tests that dive into the specifics of Data Movement. The current focus is to verify the
+correct paths (for index mount directories) when doing copy-in and copy-out between ephemeral
+filesystems and global lustre.
+
+To run:
+
+    ```shell
+    make dm
+    ```
+
+## `copy-in-copy-out` tests
 
 These tests make use of a markdown table to define all the expected behavior when performing data
 movement when it comes to verifying the destination mkdir directory and index mount directories. The
@@ -41,6 +75,11 @@ looped over to dynamically create Bats tests.
 
 This is then done for each Data Movement supported filesystem type:
     - xfs
+    - gfs2
+    - lustre
+
+There are additional tests to verify the Copy Offload API to facilitate the copy-out for the
+supported filesystems:
     - gfs2
     - lustre
 
