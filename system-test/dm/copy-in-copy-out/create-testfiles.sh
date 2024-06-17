@@ -37,7 +37,7 @@ cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job2/data2.out
 mkdir -p ${TESTDIR}/dest
 
 # let the users group own testdir
-chown -R ${USER}:users ${TESTDIR}
+#chown -R ${USER}:users ${TESTDIR}
 
 # make sure src isn't group writeable though (to protect it)
 chmod -R g-w ${TESTDIR}/src

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This file is meant to be sourced (.) to update PATH to include the local install of bats.
+# Install ginkgo to default GOBIN (~/go/bin)
 
 # Copyright 2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
@@ -18,16 +18,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Get the directory of this script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BATS_DIR=${SCRIPT_DIR}/bats/bin
 
-# Check if the directory is already in PATH
-if [[ ":$PATH:" != *":$BATS_DIR:"* ]]; then
-    # Add the directory to PATH
-    export PATH="$BATS_DIR:$PATH"
-fi
+GINKGO_MOD=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $1 "@" $2}')
+GOMEGA_VER=$(grep "github.com/onsi/gomega" go.mod | awk '{print $2}')
+bash -c "echo Using ${GINKGO_MOD} and gomega ${GOMEGA_VER} && go get ${GINKGO_MOD} && go get github.com/onsi/gomega@${GOMEGA_VER}"
 
-# return the path
-echo "$BATS_DIR"
+GINKGO_CLI_VER=$(grep "github.com/onsi/ginkgo" go.mod | awk '{print $2}')
+bash -c "go install github.com/onsi/ginkgo/v2/ginkgo@${GINKGO_CLI_VER}"
