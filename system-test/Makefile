@@ -48,7 +48,7 @@ export R
 export PATH := $(shell ./bats_env.sh):$(PATH)
 
 # Default bats command
-BATS = bats -j $(J)
+BATS = bats -j $(J) -T
 
 .PHONY: all
 all: init test dm
