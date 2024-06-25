@@ -43,12 +43,18 @@ fi
 
 # Command to run on the compute node via flux
 # TODO try set -x
+#COMPUTE_CMD="bash -c 'hostname'"
 COMPUTE_CMD='hostname'
+
+
+function setup_file {
+    # When using UUID in the DW name keyboard, just use the first 9 digits to make $DW_ env vars easier
+    export UUID=$(uuidgen | cut -d'-' -f1)
+}
 
 #----------------------------------------------------------
 # Simple Tests
 #----------------------------------------------------------
-
 # bats test_tags=tag:xfs, tag:sanity, tag:simple
 @test "XFS" {
     ${FLUX} --setattr=dw="\
@@ -84,42 +90,67 @@ COMPUTE_CMD='hostname'
 # bats test_tags=tag:lustre, tag:persistent, tag:create
 @test "Persistent (Create) - Lustre" {
     ${FLUX} --setattr=dw="\
-        #DW create_persistent type=lustre name=persistent-lustre capacity=50GB" \
+        #DW create_persistent type=lustre name=persistent-lustre-${UUID} capacity=50GB" \
         ${COMPUTE_CMD}
 }
 
 # bats test_tags=tag:gfs2, tag:persistent, tag:create
 @test "Persistent (Create) - GFS2" {
     ${FLUX} --setattr=dw="\
-        #DW create_persistent type=gfs2 name=persistent-gfs2 capacity=50GB" \
+        #DW create_persistent type=gfs2 name=persistent-gfs2-${UUID} capacity=50GB" \
         ${COMPUTE_CMD}
 }
 
 # bats test_tags=tag:xfs, tag:persistent, tag:create
 @test "Persistent (Create) - XFS" {
     ${FLUX} --setattr=dw="\
-        #DW create_persistent type=xfs name=persistent-xfs capacity=50GB" \
+        #DW create_persistent type=xfs name=persistent-xfs-${UUID} capacity=50GB" \
         ${COMPUTE_CMD}
 }
 
 # bats test_tags=tag:raw, tag:persistent, tag:create
 @test "Persistent (Create) - Raw" {
     ${FLUX} --setattr=dw="\
-        #DW create_persistent type=raw name=persistent-raw capacity=50GB" \
+        #DW create_persistent type=raw name=persistent-raw-${UUID} capacity=50GB" \
         ${COMPUTE_CMD}
 }
 
 #----------------------------------------------------------
 # Persistent Storage - Use It
 #----------------------------------------------------------
+# bats test_tags=tag:lustre, tag:persistent, tag:use
+@test "Persistent (Usage) - Lustre" {
+    ${FLUX} --setattr=dw="\
+        #DW persistentdw name=persistent-lustre-${UUID}" \
+        bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_lustre_${UUID}}/test123.out && \
+            stat \${DW_PERSISTENT_persistent_lustre_${UUID}}/test123.out"
+}
+
 # bats test_tags=tag:gfs2, tag:persistent, tag:use
 @test "Persistent (Usage) - GFS2" {
-    skip
+    skip # FIXME: flux has an issue with assigning computes to rabbits that are not hosting the persistent filesystem
     ${FLUX} --setattr=dw="\
-        #DW jobdw type=gfs2 name=use-persistent-gfs2 capacity=50GB \
-        #DW persistentdw name=persistent-gfs2" \
-        bash -c "fallocate -l1GB \${DW_PERSISTENT_persistent_gfs2}/test123.out && realpath \${DW_PERSISTENT_persistent_gfs2}"
-    # [[ "$output" =~ ^/mnt/nnf/[[:alnum:]-]+/test123\.out$ ]]
+        #DW persistentdw name=persistent-gfs2-${UUID}" \
+        bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_gfs2_${UUID}}/test123.out && \
+            stat \${DW_PERSISTENT_persistent_gfs2_${UUID}}/test123.out"
+}
+
+# bats test_tags=tag:xfs, tag:persistent, tag:use
+@test "Persistent (Usage) - XFS" {
+    skip # FIXME: flux has an issue with assigning computes to rabbits that are not hosting the persistent filesystem
+    ${FLUX} --setattr=dw="\
+        #DW persistentdw name=persistent-xfs-${UUID}" \
+        bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_xfs_${UUID}}/test123.out && \
+            stat \${DW_PERSISTENT_persistent_xfs_${UUID}}/test123.out"
+}
+
+# bats test_tags=tag:raw, tag:persistent, tag:use
+@test "Persistent (Usage) - Raw" {
+    skip # FIXME: flux has an issue with assigning computes to rabbits that are not hosting the persistent filesystem
+    ${FLUX} --setattr=dw="\
+        #DW persistentdw name=persistent-raw-${UUID}" \
+        bash -c "mkfs \${DW_PERSISTENT_persistent_raw_${UUID}} && \
+            stat \${DW_PERSISTENT_persistent_raw_${UUID}}"
 }
 
 #----------------------------------------------------------
@@ -235,27 +266,27 @@ COMPUTE_CMD='hostname'
 # bats test_tags=tag:lustre, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - Lustre" {
     ${FLUX} --setattr=dw="\
-        #DW destroy_persistent name=persistent-lustre" \
+        #DW destroy_persistent name=persistent-lustre-${UUID}" \
         ${COMPUTE_CMD}
 }
 
 # bats test_tags=tag:gfs2, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - GFS2" {
     ${FLUX} --setattr=dw="\
-        #DW destroy_persistent name=persistent-gfs2" \
+        #DW destroy_persistent name=persistent-gfs2-${UUID}" \
         ${COMPUTE_CMD}
 }
 
 # bats test_tags=tag:xfs, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - XFS" {
     ${FLUX} --setattr=dw="\
-        #DW destroy_persistent name=persistent-xfs" \
+        #DW destroy_persistent name=persistent-xfs-${UUID}" \
         ${COMPUTE_CMD}
 }
 
 # bats test_tags=tag:raw, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - Raw" {
     ${FLUX} --setattr=dw="\
-        #DW destroy_persistent name=persistent-raw" \
+        #DW destroy_persistent name=persistent-raw-${UUID}" \
         ${COMPUTE_CMD}
 }
