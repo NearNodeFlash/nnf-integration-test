@@ -122,8 +122,8 @@ function setup_file {
 @test "Persistent (Usage) - Lustre" {
     ${FLUX} --setattr=dw="\
         #DW persistentdw name=persistent-lustre-${UUID}" \
-        bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_lustre_${UUID}}/test123.out && \
-            stat \${DW_PERSISTENT_persistent_lustre_${UUID}}/test123.out"
+        bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_lustre_${UUID}}/test-\${FLUX_TASK_RANK}.out && \
+            stat \${DW_PERSISTENT_persistent_lustre_${UUID}}/test-\${FLUX_TASK_RANK}.out"
 }
 
 # bats test_tags=tag:gfs2, tag:persistent, tag:use
