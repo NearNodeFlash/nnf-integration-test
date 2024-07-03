@@ -1,6 +1,6 @@
 module github.com/NearNodeFlash/nnf-integration-test
 
-go 1.19
+go 1.21
 
 require (
 	github.com/DataWorkflowServices/dws v0.0.1-0.20240222182926-d1d8c49868cc
