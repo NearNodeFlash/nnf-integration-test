@@ -408,7 +408,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 	if o.mgsPool != nil {
 		for i := 0; i < o.mgsPool.count; i++ {
-			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-create", o.mgsPool.name, i), fmt.Sprintf("#DW create_persistent type=lustre name=%s-%d capacity=1GB profile=%s", o.mgsPool.name, i, o.mgsPool.name)).WithStorageProfileStandaloneMGT(o.mgsPool.name)
+			mgsPersistentStorage := MakeTest(fmt.Sprintf("MGS Pool %s-%d-create", o.mgsPool.name, i), fmt.Sprintf("#DW create_persistent type=lustre name=%s-%d profile=%s", o.mgsPool.name, i, o.mgsPool.name)).WithStorageProfileStandaloneMGT(o.mgsPool.name)
 
 			By(fmt.Sprintf("Creating persistent lustre MGS '%s'", o.mgsPool.name))
 			Expect(k8sClient.Create(ctx, mgsPersistentStorage.Workflow())).To(Succeed())
