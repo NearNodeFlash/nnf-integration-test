@@ -31,9 +31,10 @@ export N
 J ?= 1
 export J
 
-# Default the global lustre root directory. Tests that use global lustre expect a writeable user
-# directory at GLOBAL_LUSTRE_ROOT (e.g. /lus/global/myuser).
-GLOBAL_LUSTRE_ROOT ?= /lus/global
+# Default the global lustre root directory. Tests that use global lustre expect a
+# writeable user directory at GLOBAL_LUSTRE_ROOT (e.g. /lus/global/myuser).
+GLOBAL_LUSTRE_ROOT ?= $(shell df -t lustre --output=target 2>/dev/null | \
+        awk 'FNR==2 { print $0; exit 1 }' && echo '/lus/global')
 export GLOBAL_LUSTRE_ROOT
 
 # Default to no flux queue
