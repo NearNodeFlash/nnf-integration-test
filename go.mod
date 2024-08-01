@@ -3,7 +3,7 @@ module github.com/NearNodeFlash/nnf-integration-test
 go 1.21
 
 require (
-	github.com/DataWorkflowServices/dws v0.0.1-0.20240709160056-4a27e5a8dc76
+	github.com/DataWorkflowServices/dws v0.0.1-0.20240710175416-1e4b39039a88
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	go.openly.dev/pointy v1.3.0
@@ -17,7 +17,7 @@ require (
 require (
 	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20240709160956-40dcbac0aadf
 	github.com/NearNodeFlash/nnf-ec v0.0.1-0.20240708183336-34d1295977f5 // indirect
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240709163441-6af5511bbea9
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20240801182416-74dad2c445da
 )
 
 require (
