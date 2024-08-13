@@ -402,7 +402,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 			return storage.Status.Ready
 		}).WithTimeout(time.Minute).WithPolling(time.Second).Should(BeTrue())
 
-		o.persistentLustre.fsName = storage.Spec.AllocationSets[0].FileSystemName
+		o.persistentLustre.fsName = storage.Status.FileSystemName
 		o.persistentLustre.mgsNids = storage.Status.MgsAddress
 	}
 
