@@ -47,7 +47,7 @@ fi
 
 # Optionally use copy_offload to perform the copy_out
 copy_out_method="out"
-if [[ -v "${COPY_OFFLOAD}" ]]; then
+if [ "${COPY_OFFLOAD}" != "" ]; then
     copy_out_method="offload"
 fi
 
