@@ -360,6 +360,13 @@ jobs:
         run: |
           cd system-test
           make init
+      - name: Create env file
+        run: |
+          cd system-test
+          touch env
+          echo "GLOBAL_LUSTRE_ROOT?=/lus/global" >> env
+          echo "N ?=4" >> env
+          echo "J ?=1" >> env
       - name: Run system-test
         run: |
           cd system-test
@@ -384,6 +391,13 @@ jobs:
         run: |
           cd system-test
           make init
+      - name: Create env file
+        run: |
+          cd system-test
+          touch env
+          echo "GLOBAL_LUSTRE_ROOT?=/lus/global" >> env
+          echo "N ?=4" >> env
+          echo "J ?=1" >> env
       - name: Run dm-system-test
         run: |
           cd system-test
