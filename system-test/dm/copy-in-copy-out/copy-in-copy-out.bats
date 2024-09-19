@@ -71,14 +71,17 @@ for ((i = 0; i < NUM_TESTS; i++)); do
 done
 
 function setup() {
-    ./create-testfiles.sh ${TESTDIR}
-    rm -rf ${TESTDIR}/dest/*
+    # Make a unique directory to support simulteanous tests
+    export UUID=$(uuidgen | cut -d'-' -f1)
+    export DESTDIR=${TESTDIR}/${UUID}
+    mkdir ${DESTDIR}
+    ./create-testfiles.sh ${DESTDIR}
 }
 
 function teardown() {
     # clean up if it succeeded, otherwise leave it around for inspection (if no other tests run afterwards)
-    if [[ -v "${BATS_TEST_COMPLETED}" ]]; then
-        rm -rf ${TESTDIR}/dest/*
+    if [[ "${BATS_TEST_COMPLETED}" -eq 1 ]]; then
+        rm -rf ${DESTDIR}
     fi
 }
 
@@ -88,9 +91,9 @@ function test_copy_in_copy_out() {
     local dest=$(cat $tests_file | jq -r ".[$idx].dest")
     local expected=$(cat $tests_file | jq -r ".[$idx].expected")
 
-    local copy_in_src=${TESTDIR}/src/
+    local copy_in_src=${DESTDIR}/src/
 
-    # expand the $TESTDIR variable in dest/expected vars
+    # expand the $DESTDIR variable in dest/expected vars
     dest="$(eval echo "$dest")"
     expected="$(eval echo "$expected")"
 
