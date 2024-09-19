@@ -37,16 +37,16 @@ pushd copy-in-copy-out
 python3 convert_table.py copy-in-copy-out.md copy-in-copy-out.json
 
 if [[ -n "${FS_TYPE}" ]]; then
-    ./copy-in-copy-out.bats
+    bats -j "${J}" -T ./copy-in-copy-out.bats
 else
     # Run copy_out tests for each filesystem
-    FS_TYPE=gfs2 ./copy-in-copy-out.bats
-    FS_TYPE=xfs ./copy-in-copy-out.bats
-    FS_TYPE=lustre ./copy-in-copy-out.bats
+    FS_TYPE=gfs2 bats -j "${J}" -T ./copy-in-copy-out.bats
+    FS_TYPE=xfs bats -j "${J}" -T ./copy-in-copy-out.bats
+    FS_TYPE=lustre bats -j "${J}" -T ./copy-in-copy-out.bats
 
     # Run the same with copy offload with supported filesystems (gfs2->lustre, lustre->lustre)
-    FS_TYPE=gfs2 COPY_OFFLOAD=y ./copy-in-copy-out.bats
-    FS_TYPE=lustre COPY_OFFLOAD=y ./copy-in-copy-out.bats
+    FS_TYPE=gfs2 COPY_OFFLOAD=y bats -j "${J}" -T ./copy-in-copy-out.bats
+    FS_TYPE=lustre COPY_OFFLOAD=y bats -j "${J}" -T ./copy-in-copy-out.bats
 fi
 
 popd
