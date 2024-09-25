@@ -28,6 +28,10 @@ if [[ -z "${GLOBAL_LUSTRE_ROOT}" ]]; then
     GLOBAL_LUSTRE_ROOT=/lus/global
 fi
 
+if [[ -z "${DM_PROFILE}" ]]; then
+    DM_PROFILE=default
+fi
+
 # for now, expect the user directory to exist in global lustre root directory
 export TESTDIR=${GLOBAL_LUSTRE_ROOT}/${USER}/dm-system-test
 
