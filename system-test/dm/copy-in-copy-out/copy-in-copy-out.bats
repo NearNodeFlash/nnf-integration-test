@@ -45,6 +45,10 @@ if [[ -z "${NUM_TESTS}" ]]; then
     NUM_TESTS=$(jq length $tests_file)
 fi
 
+if [[ -z "${DM_PROFILE}" ]]; then
+    DM_PROFILE=default
+fi
+
 # Optionally use copy_offload to perform the copy_out
 copy_out_method="out"
 if [ "${COPY_OFFLOAD}" != "" ]; then
@@ -107,12 +111,12 @@ function test_copy_in_copy_out() {
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
             #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test" \
             bash -c "hostname && \
-                dm-client-go -source=$src -destination=$dest -profile=no-xattr"
+                dm-client-go -source=$src -destination=$dest -profile=$DM_PROFILE"
     else
         ${FLUX} --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
             #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test \
-            #DW copy_out source=$src destination=$dest profile=no-xattr" \
+            #DW copy_out source=$src destination=$dest profile=$DM_PROFILE" \
             bash -c "hostname"
     fi
 
