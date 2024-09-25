@@ -48,6 +48,9 @@ export R
 # add bats to PATH
 export PATH := $(shell ./bats_env.sh):$(PATH)
 
+DM_PROFILE ?=
+export DM_PROFILE
+
 # Default bats command
 BATS = bats -j $(J) -T
 
