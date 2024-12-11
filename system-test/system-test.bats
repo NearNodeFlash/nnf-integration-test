@@ -294,3 +294,40 @@ function setup_file {
         #DW destroy_persistent name=persistent-raw-${UUID}" \
         ${COMPUTE_CMD}
 }
+
+#----------------------------------------------------------
+# Capacity Tests
+#----------------------------------------------------------
+# bats test_tags=tag:xfs, tag:capacity
+@test "XFS - Capacity" {
+    ${FLUX_BATCH} --setattr=dw="\
+        #DW jobdw type=xfs name=xfs capacity=${GB_PER_NODE}GB" \
+        <<EOF
+#!/bin/bash
+
+df_output=$(flux run -N1 df $DW_JOB_xfs)
+# df_output=$(df -BG "$filesystem_path" 2>/dev/null | tail -1)
+
+# Check if df command succeeded
+if [ -z "$df_output" ]; then
+    echo "Error: Invalid filesystem path or unable to retrieve information."
+    exit 1
+fi
+
+# Extract available space
+# available_size=$(echo "$df_output" | awk '{print $4}' | sed 's/G//')
+available_size=$(echo "$df_output" | awk '{print $2}' | sed 's/G//')
+
+# Calculate 80% of the requested size
+required_size=$(( requested_size * 80 / 100 ))
+
+# Compare available size with required size
+if [ "$available_size" -ge "$required_size" ]; then
+    echo "Sufficient space available: ${available_size}G (>= 80% of ${requested_size}G)"
+    exit 0
+else
+    echo "Insufficient space: ${available_size}G (< 80% of ${requested_size}G)"
+    exit 1
+fi
+EOF
+}
