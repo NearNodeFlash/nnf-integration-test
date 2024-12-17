@@ -377,7 +377,7 @@ EOF
 @test "GFS2 - Capacity" {
     runit_file=$(create_capacity_file gfs2)
     ${FLUX_A} --setattr=dw="\
-        #DW jobdw type=xfs name=gfs2 capacity=${GB_PER_NODE}GB" \
+        #DW jobdw type=gfs2 name=gfs2 capacity=${GB_PER_NODE}GB" \
         $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT
 }
 
@@ -385,6 +385,6 @@ EOF
 @test "Lustre - Capacity" {
     runit_file=$(create_capacity_file lustre)
     ${FLUX_A} --setattr=dw="\
-        #DW jobdw type=xfs name=lustre capacity=${LUS_CAPACITY}GB" \
+        #DW jobdw type=lustre name=lustre capacity=${LUS_CAPACITY}GB" \
         $runit_file ${LUS_CAPACITY} $CAPACITY_PERCENT
 }
