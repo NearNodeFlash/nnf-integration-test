@@ -365,6 +365,7 @@ jobs:
           cd system-test
           touch env
           echo "GLOBAL_LUSTRE_ROOT?=/lus/global" >> env
+          echo "TEST_TMPDIR_PREFIX?=/nfs/imports/run/${USER}" >> env
           echo "DM_PROFILE?=no-xattr" >> env
           echo "N ?=4" >> env
           echo "J ?=1" >> env
@@ -397,6 +398,7 @@ jobs:
           cd system-test
           touch env
           echo "GLOBAL_LUSTRE_ROOT?=/lus/global" >> env
+          echo "TEST_TMPDIR_PREFIX?=/nfs/imports/run/${USER}" >> env
           echo "DM_PROFILE?=no-xattr" >> env
           echo "N ?=2" >> env
           echo "J ?=2" >> env
