@@ -23,6 +23,11 @@ if [[ -z "${GLOBAL_LUSTRE_ROOT}" ]]; then
     GLOBAL_LUSTRE_ROOT=/lus/global
 fi
 
+# Test Tempdir directory
+if [[ -z "${TEST_TMPDIR_PREFIX}" ]]; then
+    TEST_TMPDIR_PREFIX=${HOME}/nnf/tmp
+fi
+
 # Number of compute nodes; default to 4
 if [[ -z "${N}" ]]; then
     N=4
@@ -30,15 +35,18 @@ fi
 
 # Flux command
 FLUX="flux run -l -N${N} --wait-event=clean"
+FLUX_A="flux alloc -N${N}"
 
 # Use a Flux queue
 if [ "${Q}" != "" ]; then
     FLUX+=" -q ${Q}"
+    FLUX_A+=" -q ${Q}"
 fi
 
 # Require specific rabbits
 if [ "${R}" != "" ]; then
     FLUX+=" --requires=hosts:${R}"
+    FLUX_A+=" --requires=hosts:${R}"
 fi
 
 # Command to run on the compute node via flux
@@ -46,7 +54,11 @@ fi
 #COMPUTE_CMD="bash -c 'hostname'"
 COMPUTE_CMD='hostname'
 
-GB_PER_NODE=100
+# How much space to request for rabbit workflows per node
+GB_PER_NODE=300
+
+# For capacity tests, what is the threshold of available capacity vs the requested capacity
+CAPACITY_PERCENT=80
 
 function setup_file {
     # When using UUID in the DW name keyboard, just use the first 9 digits to make $DW_ env vars easier
@@ -54,6 +66,20 @@ function setup_file {
 
     # For lustre tests, use the total capacity given the node count
     export LUS_CAPACITY=$(($N * $GB_PER_NODE))
+
+    # Ensure tempdir prefix directory exists
+    mkdir -p ${TEST_TMPDIR_PREFIX}
+}
+
+function setup {
+    # Create a test tmpdir at the supplied prefix (e.g. /home/user/nnf/tmp.x8e8f0a/)
+    export TEST_TMPDIR=$(mktemp -d -p ${TEST_TMPDIR_PREFIX})
+}
+
+function teardown {
+    if [[ -n "$TEST_TMPDIR" ]]; then
+        rm -rf $TEST_TMPDIR
+    fi
 }
 
 #----------------------------------------------------------
@@ -293,4 +319,72 @@ function setup_file {
     ${FLUX} --setattr=dw="\
         #DW destroy_persistent name=persistent-raw-${UUID}" \
         ${COMPUTE_CMD}
+}
+
+#----------------------------------------------------------
+# Capacity Tests
+#----------------------------------------------------------
+function create_capacity_file {
+    wf_name=$1
+    runit_file="$TEST_TMPDIR/run-it.sh"
+    touch $runit_file
+    chmod +x $runit_file
+    cat << 'EOF' >> $runit_file
+#!/bin/bash
+echo "jobid: $(flux getattr jobid)"
+requested_size=$1
+capacity_percent=$2
+
+echo "\$DW_JOB_<NAME>: $DW_JOB_<NAME>"
+
+df_output=$(flux run -N1 df -BG "$DW_JOB_<NAME>" 2>/dev/null | tail -1)
+if [ -z "$df_output" ]; then
+    echo "Error: Invalid filesystem path or unable to retrieve information."
+    exit 1
+fi
+
+available_size=$(echo "$df_output" | awk '{print $2}' | sed 's/G//')
+required_size=$(( requested_size * capacity_percent / 100 ))
+
+echo "requested_size: ${requested_size} GB"
+echo "required_size (${capacity_percent}%): ${required_size} GB"
+echo "available_size: ${available_size} GB"
+
+if [ "$available_size" -ge "$required_size" ]; then
+    echo "Sufficient space available: ${available_size}G (>= ${capacity_percent}% of ${requested_size}G)"
+    exit 0
+else
+    echo "Insufficient space: ${available_size}G (< ${capacity_percent}% of ${requested_size}G)"
+    exit 1
+fi
+EOF
+
+    # replace the workflow name in the $DW_JOB_ env var
+    sed -i "s/<NAME>/$wf_name/g" $runit_file
+
+    echo $runit_file
+}
+
+# bats test_tags=tag:xfs, tag:capacity
+@test "XFS - Capacity" {
+    runit_file=$(create_capacity_file xfs)
+    ${FLUX_A} --setattr=dw="\
+        #DW jobdw type=xfs name=xfs capacity=${GB_PER_NODE}GB" \
+        $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT
+}
+
+# bats test_tags=tag:gfs2, tag:capacity
+@test "GFS2 - Capacity" {
+    runit_file=$(create_capacity_file gfs2)
+    ${FLUX_A} --setattr=dw="\
+        #DW jobdw type=gfs2 name=gfs2 capacity=${GB_PER_NODE}GB" \
+        $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT
+}
+
+# bats test_tags=tag:lustre, tag:capacity
+@test "Lustre - Capacity" {
+    runit_file=$(create_capacity_file lustre)
+    ${FLUX_A} --setattr=dw="\
+        #DW jobdw type=lustre name=lustre capacity=${LUS_CAPACITY}GB" \
+        $runit_file ${LUS_CAPACITY} $CAPACITY_PERCENT
 }
