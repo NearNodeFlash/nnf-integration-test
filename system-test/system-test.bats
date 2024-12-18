@@ -119,6 +119,9 @@ function teardown {
 
 # bats test_tags=tag:lustre, tag:persistent, tag:create
 @test "Persistent (Create) - Lustre" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW create_persistent type=lustre name=persistent-lustre-${UUID} capacity=${LUS_CAPACITY}GB" \
         ${COMPUTE_CMD}
@@ -126,6 +129,9 @@ function teardown {
 
 # bats test_tags=tag:gfs2, tag:persistent, tag:create
 @test "Persistent (Create) - GFS2" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW create_persistent type=gfs2 name=persistent-gfs2-${UUID} capacity=${GB_PER_NODE}GB" \
         ${COMPUTE_CMD}
@@ -133,6 +139,9 @@ function teardown {
 
 # bats test_tags=tag:xfs, tag:persistent, tag:create
 @test "Persistent (Create) - XFS" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW create_persistent type=xfs name=persistent-xfs-${UUID} capacity=${GB_PER_NODE}GB" \
         ${COMPUTE_CMD}
@@ -140,6 +149,9 @@ function teardown {
 
 # bats test_tags=tag:raw, tag:persistent, tag:create
 @test "Persistent (Create) - Raw" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW create_persistent type=raw name=persistent-raw-${UUID} capacity=${GB_PER_NODE}GB" \
         ${COMPUTE_CMD}
@@ -150,6 +162,9 @@ function teardown {
 #----------------------------------------------------------
 # bats test_tags=tag:lustre, tag:persistent, tag:use
 @test "Persistent (Usage) - Lustre" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW persistentdw name=persistent-lustre-${UUID}" \
         bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_lustre_${UUID}}/test-\${FLUX_TASK_RANK}.out && \
@@ -158,7 +173,9 @@ function teardown {
 
 # bats test_tags=tag:gfs2, tag:persistent, tag:use
 @test "Persistent (Usage) - GFS2" {
-    skip # FIXME: flux has an issue with assigning computes to rabbits that are not hosting the persistent filesystem
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW persistentdw name=persistent-gfs2-${UUID}" \
         bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_gfs2_${UUID}}/test123.out && \
@@ -167,7 +184,9 @@ function teardown {
 
 # bats test_tags=tag:xfs, tag:persistent, tag:use
 @test "Persistent (Usage) - XFS" {
-    skip # FIXME: flux has an issue with assigning computes to rabbits that are not hosting the persistent filesystem
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW persistentdw name=persistent-xfs-${UUID}" \
         bash -c "fallocate -l1GB -x \${DW_PERSISTENT_persistent_xfs_${UUID}}/test123.out && \
@@ -176,7 +195,9 @@ function teardown {
 
 # bats test_tags=tag:raw, tag:persistent, tag:use
 @test "Persistent (Usage) - Raw" {
-    skip # FIXME: flux has an issue with assigning computes to rabbits that are not hosting the persistent filesystem
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW persistentdw name=persistent-raw-${UUID}" \
         bash -c "mkfs \${DW_PERSISTENT_persistent_raw_${UUID}} && \
@@ -295,6 +316,9 @@ function teardown {
 #----------------------------------------------------------
 # bats test_tags=tag:lustre, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - Lustre" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW destroy_persistent name=persistent-lustre-${UUID}" \
         ${COMPUTE_CMD}
@@ -302,6 +326,9 @@ function teardown {
 
 # bats test_tags=tag:gfs2, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - GFS2" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW destroy_persistent name=persistent-gfs2-${UUID}" \
         ${COMPUTE_CMD}
@@ -309,6 +336,9 @@ function teardown {
 
 # bats test_tags=tag:xfs, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - XFS" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW destroy_persistent name=persistent-xfs-${UUID}" \
         ${COMPUTE_CMD}
@@ -316,6 +346,9 @@ function teardown {
 
 # bats test_tags=tag:raw, tag:persistent, tag:destroy
 @test "Persistent (Destroy) - Raw" {
+    if [ "$ENABLE_PERSISTENT" != "yes" ]; then
+        skip
+    fi
     ${FLUX} --setattr=dw="\
         #DW destroy_persistent name=persistent-raw-${UUID}" \
         ${COMPUTE_CMD}
