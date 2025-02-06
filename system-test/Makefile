@@ -52,7 +52,7 @@ DM_PROFILE ?=
 export DM_PROFILE
 
 # Default bats command
-BATS = bats -j $(J) -T
+BATS = bats -j $(J) -T --print-output-on-failure  --verbose-run
 
 .PHONY: all
 all: init test dm
