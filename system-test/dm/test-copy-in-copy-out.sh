@@ -49,8 +49,10 @@ else
     FS_TYPE=lustre bats -j "${J}" -T ./copy-in-copy-out.bats
 
     # Run the same with copy offload with supported filesystems (gfs2->lustre, lustre->lustre)
-    FS_TYPE=gfs2 COPY_OFFLOAD=y bats -j "${J}" -T ./copy-in-copy-out.bats
-    FS_TYPE=lustre COPY_OFFLOAD=y bats -j "${J}" -T ./copy-in-copy-out.bats
+    if [ "$ENABLE_COPY_OFFLOAD" == "yes" ]; then
+        FS_TYPE=gfs2 COPY_OFFLOAD=y bats -j "${J}" -T ./copy-in-copy-out.bats
+        FS_TYPE=lustre COPY_OFFLOAD=y bats -j "${J}" -T ./copy-in-copy-out.bats
+    fi
 fi
 
 popd

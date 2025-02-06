@@ -78,7 +78,7 @@ function setup() {
     # Make a unique directory to support simulteanous tests
     export UUID=$(uuidgen | cut -d'-' -f1)
     export DESTDIR=${TESTDIR}/${UUID}
-    mkdir ${DESTDIR}
+    mkdir -p ${DESTDIR}
     ./create-testfiles.sh ${DESTDIR}
 }
 
