@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.openly.dev/pointy"
 
-	dwsv1alpha2 "github.com/DataWorkflowServices/dws/api/v1alpha2"
+	dwsv1alpha3 "github.com/DataWorkflowServices/dws/api/v1alpha3"
 )
 
 var (
@@ -41,9 +41,9 @@ var (
 	highTimeout = "5m"
 
 	// Which states use the high timeout
-	highTimeoutStates = []dwsv1alpha2.WorkflowState{
-		dwsv1alpha2.StateSetup,
-		dwsv1alpha2.StateTeardown,
+	highTimeoutStates = []dwsv1alpha3.WorkflowState{
+		dwsv1alpha3.StateSetup,
+		dwsv1alpha3.StateTeardown,
 	}
 )
 
@@ -143,17 +143,17 @@ var tests = []*T{
 		"#DW container name=prerun-timeout-mpi profile=example-mpi-prerun-timeout").
 		WithPermissions(1050, 1051).WithLabels("mpi", "timeout").
 		WithContainerProfile("example-mpi", &ContainerProfileOptions{PrerunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
-		ExpectError(dwsv1alpha2.StatePreRun),
+		ExpectError(dwsv1alpha3.StatePreRun),
 	MakeTest("PostRun timeout on MPI containers",
 		"#DW container name=postrun-timeout-mpi profile=example-mpi-postrun-timeout").
 		WithPermissions(1050, 1051).WithLabels("mpi", "timeout").
 		WithContainerProfile("example-mpi-webserver", &ContainerProfileOptions{PostrunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
-		ExpectError(dwsv1alpha2.StatePostRun),
+		ExpectError(dwsv1alpha3.StatePostRun),
 	MakeTest("Non-zero exit on MPI containers",
 		"#DW container name=mpi-container-fail profile=example-mpi-fail-noretry").
 		WithPermissions(1050, 1051).WithLabels("mpi", "fail").
 		WithContainerProfile("example-mpi-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
-		ExpectError(dwsv1alpha2.StatePostRun),
+		ExpectError(dwsv1alpha3.StatePostRun),
 
 	// Containers - Non-MPI
 	MakeTest("GFS2 with Containers",
@@ -175,27 +175,27 @@ var tests = []*T{
 		"#DW container name=prerun-timeout profile=example-prerun-timeout").
 		WithPermissions(1050, 1051).WithLabels("non-mpi", "timeout").
 		WithContainerProfile("example-forever", &ContainerProfileOptions{PrerunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
-		ExpectError(dwsv1alpha2.StatePreRun),
+		ExpectError(dwsv1alpha3.StatePreRun),
 	MakeTest("PostRun timeout on non-MPI containers",
 		"#DW container name=postrun-timeout profile=example-postrun-timeout").
 		WithPermissions(1050, 1051).WithLabels("non-mpi", "timeout").
 		WithContainerProfile("example-forever", &ContainerProfileOptions{PostrunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
-		ExpectError(dwsv1alpha2.StatePostRun),
+		ExpectError(dwsv1alpha3.StatePostRun),
 	MakeTest("Non-zero exit on non-MPI containers",
 		"#DW container name=container-fail profile=example-fail-noretry").
 		WithPermissions(1050, 1051).WithLabels("non-mpi", "fail").
 		WithContainerProfile("example-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
-		ExpectError(dwsv1alpha2.StatePostRun),
+		ExpectError(dwsv1alpha3.StatePostRun),
 
 	// Containers - Unsupported Filesystems. These should fail as xfs/raw filesystems are not supported for containers.
 	MakeTest("XFS with Containers",
 		"#DW jobdw type=xfs name=xfs-with-containers capacity=100GB",
 		"#DW container name=xfs-with-containers profile=example-success DW_JOB_foo_local_storage=xfs-with-containers").
-		ExpectError(dwsv1alpha2.StateProposal).WithLabels("unsupported-fs"),
+		ExpectError(dwsv1alpha3.StateProposal).WithLabels("unsupported-fs"),
 	MakeTest("Raw with Containers",
 		"#DW jobdw type=raw name=raw-with-containers capacity=100GB",
 		"#DW container name=raw-with-containers profile=example-success DW_JOB_foo_local_storage=raw-with-containers").
-		ExpectError(dwsv1alpha2.StateProposal).WithLabels("unsupported-fs"),
+		ExpectError(dwsv1alpha3.StateProposal).WithLabels("unsupported-fs"),
 
 	// Containers - Multiple Storages
 	MakeTest("GFS2 and Lustre with Containers",
@@ -250,7 +250,7 @@ var _ = Describe("NNF Integration Test", func() {
 						// TODO: Ginkgo's `--fail-fast` option still seems to execute DeferCleanup() calls
 						//       See if this is by design or if we might need to move this to an AfterEach()
 						if !context.SpecReport().Failed() {
-							t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha2.StateTeardown)
+							t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha3.StateTeardown)
 
 							Expect(k8sClient.Delete(ctx, workflow)).To(Succeed())
 						}
