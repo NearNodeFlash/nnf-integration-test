@@ -1,3 +1,22 @@
+/*
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package internal
 
 import (
@@ -11,7 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	dwsv1alpha2 "github.com/DataWorkflowServices/dws/api/v1alpha2"
+	dwsv1alpha3 "github.com/DataWorkflowServices/dws/api/v1alpha3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -22,13 +41,13 @@ const (
 	helperImage = "ghcr.io/nearnodeflash/nnf-integration-test-helper"
 )
 
-func GetSystemConfiguraton(ctx context.Context, k8sClient client.Client) *dwsv1alpha2.SystemConfiguration {
+func GetSystemConfiguraton(ctx context.Context, k8sClient client.Client) *dwsv1alpha3.SystemConfiguration {
 	// TODO: Move this to a global variable and initialized in the test suite.
 	// Note that putting the GET in Prepare will not work for things like
 	// WithPersistentLustre() since those options run new MakeTests and do not
 	// run prepare.
 
-	systemConfig := &dwsv1alpha2.SystemConfiguration{}
+	systemConfig := &dwsv1alpha3.SystemConfiguration{}
 	Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "default", Namespace: corev1.NamespaceDefault}, systemConfig)).To(Succeed())
 
 	// Except there to be at least 1 compute and storage node
@@ -128,9 +147,9 @@ func runHelperPod(ctx context.Context, k8sClient client.Client, t *T, name, comm
 		},
 	}
 
-	dwsv1alpha2.InheritParentLabels(pod, t.workflow)
-	dwsv1alpha2.AddOwnerLabels(pod, t.workflow)
-	dwsv1alpha2.AddWorkflowLabels(pod, t.workflow)
+	dwsv1alpha3.InheritParentLabels(pod, t.workflow)
+	dwsv1alpha3.AddOwnerLabels(pod, t.workflow)
+	dwsv1alpha3.AddWorkflowLabels(pod, t.workflow)
 
 	Expect(k8sClient.Create(ctx, pod)).To(Succeed())
 	t.helperPods = append(t.helperPods, pod)
