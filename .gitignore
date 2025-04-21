@@ -21,3 +21,8 @@ vendor/
 go.work
 
 .version
+
+# For the upgrade-tester tool.
+upgrade-tester/workingspace/
+workingspace/
+
