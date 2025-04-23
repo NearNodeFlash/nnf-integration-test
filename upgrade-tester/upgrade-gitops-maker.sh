@@ -333,6 +333,7 @@ EOF
 
     git add environments
     git commit -s -m 'touch-ups'
+    $NO_PUSH_DBG git push --set-upstream origin main
 }
 
 # =====================================
