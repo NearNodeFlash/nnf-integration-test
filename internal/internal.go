@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	dwsv1alpha3 "github.com/DataWorkflowServices/dws/api/v1alpha3"
+	dwsv1alpha4 "github.com/DataWorkflowServices/dws/api/v1alpha4"
 	"github.com/DataWorkflowServices/dws/utils/dwdparse"
 )
 
@@ -68,7 +68,7 @@ type T struct {
 	decorators []interface{}
 
 	// Workflow defines the DWS Workflow resource that is the target of the test.
-	workflow *dwsv1alpha3.Workflow
+	workflow *dwsv1alpha4.Workflow
 
 	// User Id to use for the workflow
 	userId int
@@ -84,7 +84,7 @@ type T struct {
 	helperPods []*corev1.Pod
 
 	// Compute nodes that were assigned to the test. This is determined at test runtime.
-	computes *dwsv1alpha3.Computes
+	computes *dwsv1alpha4.Computes
 }
 
 func MakeTest(name string, directives ...string) *T {
@@ -118,13 +118,13 @@ func MakeTest(name string, directives ...string) *T {
 		t.directives = []string{}
 	}
 
-	t.workflow = &dwsv1alpha3.Workflow{
+	t.workflow = &dwsv1alpha4.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      t.WorkflowName(),
 			Namespace: corev1.NamespaceDefault,
 		},
-		Spec: dwsv1alpha3.WorkflowSpec{
-			DesiredState: dwsv1alpha3.StateProposal,
+		Spec: dwsv1alpha4.WorkflowSpec{
+			DesiredState: dwsv1alpha4.StateProposal,
 			DWDirectives: t.WorkflowDirectives(),
 			JobID:        intstr.FromInt(GinkgoParallelProcess()),
 			WLMID:        strconv.Itoa(GinkgoParallelProcess()),
@@ -145,7 +145,7 @@ func (t *T) WorkflowDirectives() []string {
 	return t.directives
 }
 
-func (t *T) Workflow() *dwsv1alpha3.Workflow {
+func (t *T) Workflow() *dwsv1alpha4.Workflow {
 	return t.workflow
 }
 
