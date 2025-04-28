@@ -354,7 +354,10 @@ configure_v0_1_11_manifests() {
     sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
 
     # Roll back the API version in SystemConfiguration.
-    sed -i.bak -e 's/v1alpha3/v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+    sed -i.bak -e 's/v1alpha./v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+
+    # SystemStatus isn't available yet.
+    cp /dev/null environments/"$GITOPS_ENV"/site-config/systemstatus.yaml
 
     # Fix indentation bug in nnf-sos DaemonSet that affects the KIND
     # environment.
@@ -393,7 +396,10 @@ configure_v0_1_12_manifests() {
     sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
 
     # Roll back the API version in SystemConfiguration.
-    sed -i.bak -e 's/v1alpha3/v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+    sed -i.bak -e 's/v1alpha./v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+
+    # SystemStatus isn't available yet.
+    cp /dev/null environments/"$GITOPS_ENV"/site-config/systemstatus.yaml
 
     # The CRD upgrade helpers were not being used with this release. So remove
     # them.
@@ -427,7 +433,10 @@ configure_v0_1_13_manifests() {
     sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
 
     # Roll back the API version in SystemConfiguration.
-    sed -i.bak -e 's/v1alpha3/v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+    sed -i.bak -e 's/v1alpha./v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+
+    # SystemStatus isn't available yet.
+    cp /dev/null environments/"$GITOPS_ENV"/site-config/systemstatus.yaml
 
     # The CRD upgrade helpers were not being used with this release. So remove
     # them.
@@ -477,7 +486,10 @@ configure_v0_1_14_manifests() {
     sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
 
     # Roll back the API version in SystemConfiguration.
-    sed -i.bak -e 's/v1alpha3/v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+    sed -i.bak -e 's/v1alpha./v1alpha2/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+
+    # SystemStatus isn't available yet.
+    cp /dev/null environments/"$GITOPS_ENV"/site-config/systemstatus.yaml
 
     # The CRD upgrade helpers were not being used with this release. So remove
     # them.
@@ -525,6 +537,12 @@ configure_v0_1_15_manifests() {
     # Chop off the end of the file, where we think the patches section lives.
     sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
 
+    # Roll back the API version in SystemConfiguration.
+    sed -i.bak -e 's/v1alpha./v1alpha3/' environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml && rm environments/"$GITOPS_ENV"/site-config/systemconfiguration.yaml.bak
+
+    # SystemStatus isn't available yet.
+    cp /dev/null environments/"$GITOPS_ENV"/site-config/systemstatus.yaml
+
     # The storage-version-migrator is the only CRD upgrade helper in this
     # release. Remove the other one.
     remove_storedversions_maint
@@ -554,12 +572,39 @@ configure_v0_1_15_manifests() {
     msg "Created branch $BRANCH2 with support for nnf-storedversions-maint"
 }
 
+# =====================================
+# Configure v0.1.16 manifests.
+#
+configure_v0_1_16_manifests() {
+    TAG=v0.1.16
+    TARBALL="manifests-$TAG.tar"
+    BRANCH="rel-$TAG"
+    git checkout main
+    git checkout -b "$BRANCH"
+    get_and_unpack_manfest "$TAG" "$TARBALL"
+    set_branch_in_bootstraps "$BRANCH"
+
+    git mv environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig
+    # Remove the patches section.
+    # Chop off the end of the file, where we think the patches section lives.
+    sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
+
+    git add environments
+    git commit -s -m "Release $TAG"
+
+    ./tools/verify-deployment.sh -e "$GITOPS_ENV"
+
+    $NO_PUSH_DBG git push --set-upstream origin "$BRANCH"
+    msg "Created branch $BRANCH"
+}
+
 create_new_repo
 configure_v0_1_11_manifests
 configure_v0_1_12_manifests
 configure_v0_1_13_manifests
 configure_v0_1_14_manifests
 configure_v0_1_15_manifests
+configure_v0_1_16_manifests
 
 if [[ -z $NO_PUSH ]]; then
     echo
