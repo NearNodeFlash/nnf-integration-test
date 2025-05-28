@@ -32,6 +32,10 @@ if [[ -z "${DM_PROFILE}" ]]; then
     DM_PROFILE=default
 fi
 
+if [[ -z "${COPY_OFFLOAD_TEST_BIN}" ]]; then
+    COPY_OFFLOAD_TEST_BIN=lib-copy-offload-tester
+fi
+
 # for now, expect the user directory to exist in global lustre root directory
 export TESTDIR=${GLOBAL_LUSTRE_ROOT}/${USER}/dm-system-test
 
@@ -44,9 +48,11 @@ if [[ -n "${FS_TYPE}" ]]; then
     bats -j "${J}" -T ./copy-in-copy-out.bats
 else
     # Run copy_out tests for each filesystem
-    FS_TYPE=gfs2 bats -j "${J}" -T ./copy-in-copy-out.bats
-    FS_TYPE=xfs bats -j "${J}" -T ./copy-in-copy-out.bats
-    FS_TYPE=lustre bats -j "${J}" -T ./copy-in-copy-out.bats
+    if [ -z "$ONLY_COPY_OFFLOAD" ]; then
+        FS_TYPE=gfs2 bats -j "${J}" -T ./copy-in-copy-out.bats
+        FS_TYPE=xfs bats -j "${J}" -T ./copy-in-copy-out.bats
+        FS_TYPE=lustre bats -j "${J}" -T ./copy-in-copy-out.bats
+    fi
 
     # Run the same with copy offload with supported filesystems (gfs2->lustre, lustre->lustre)
     if [ "$ENABLE_COPY_OFFLOAD" == "yes" ]; then
