@@ -19,6 +19,7 @@
 
 # This file is repsonsible for creating the environment needed to run the copy-in-copy-out tests on
 # a global lustre filesystem that is mounted on `/lus/global`
+TESTFILE_SIZE=100M
 
 if [[ -z $1 ]]; then
     echo "testdir must be supplied"
@@ -28,7 +29,8 @@ TESTDIR=$1
 
 mkdir -p ${TESTDIR}/src/job/job2
 mkdir -p ${TESTDIR}/src/job2
-echo "hello_there" >${TESTDIR}/src/job/data.out
+fallocate -l ${TESTFILE_SIZE} -x ${TESTDIR}/src/job/data.out
+
 cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job/data2.out
 cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job/job2/data3.out
 cp ${TESTDIR}/src/job/data.out ${TESTDIR}/src/job2/data.out
