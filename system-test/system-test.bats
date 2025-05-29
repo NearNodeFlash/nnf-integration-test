@@ -285,6 +285,33 @@ function teardown {
         ${COMPUTE_CMD}
 }
 
+# Containers - Long Running Non-MPI
+# The copy offload tests in dm-system-test exercise MPI User Containers
+
+# The example-forever profile has a long-running process that never exits and a short
+# postRunTimeoutSeconds, so expect it to fail
+# bats test_tags=tag:gfs2, tag:container, tag:non-mpi, container:long-running
+@test "Container - Long Running (should fail)" {
+    run ! ${FLUX} --setattr=dw="\
+        #DW jobdw type=gfs2 name=containers-gfs2 capacity=${GB_PER_NODE}GB \
+        #DW container name=containers-gfs2 profile=example-forever \
+            DW_JOB_foo_local_storage=containers-gfs2" \
+        ${COMPUTE_CMD}
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "user container(s) failed to complete after" ]]
+}
+
+# This test uses the same example-forever profile, but with a no-wait option
+# so it should not wait for the container to finish and should not fail
+# bats test_tags=tag:gfs2, tag:container, tag:non-mpi, container:long-running, container:no-wait
+@test "Container - Long Running (no wait)" {
+    ${FLUX} --setattr=dw="\
+        #DW jobdw type=gfs2 name=containers-gfs2 capacity=${GB_PER_NODE}GB \
+        #DW container name=containers-gfs2 profile=example-forever-nowait \
+            DW_JOB_foo_local_storage=containers-gfs2" \
+        ${COMPUTE_CMD}
+}
+
 # Containers - Unsupported File systems (xfs & raw)
 
 # bats test_tags=tag:xfs, tag:container, tag:unsupported
@@ -367,10 +394,13 @@ function create_capacity_file {
 echo "jobid: $(flux getattr jobid)"
 requested_size=$1
 capacity_percent=$2
+type=$3
 
 echo "\$DW_JOB_<NAME>: $DW_JOB_<NAME>"
+hostname
 
-df_output=$(flux run -N1 df -BG "$DW_JOB_<NAME>" 2>/dev/null | tail -1)
+#df_output=$(flux run -N1 df -BG "$DW_JOB_<NAME>" 2>/dev/null | tail -1)
+df_output=$(df -BG "$DW_JOB_<NAME>" 2>/dev/null | tail -1)
 if [ -z "$df_output" ]; then
     echo "Error: Invalid filesystem path or unable to retrieve information."
     exit 1
@@ -383,11 +413,28 @@ echo "requested_size: ${requested_size} GB"
 echo "required_size (${capacity_percent}%): ${required_size} GB"
 echo "available_size: ${available_size} GB"
 
+if [ "$type" == "lustre" ]; then
+    echo ".nnf-servers.json: $(cat $DW_JOB_<NAME>/.nnf-servers.json)"
+fi
+
 if [ "$available_size" -ge "$required_size" ]; then
     echo "Sufficient space available: ${available_size}G (>= ${capacity_percent}% of ${requested_size}G)"
     exit 0
 else
     echo "Insufficient space: ${available_size}G (< ${capacity_percent}% of ${requested_size}G)"
+    if [ "$type" == "lustre" ]; then
+       echo "lfs df: $(lfs df $DW_JOB_<NAME>)"
+       echo "lfs check servers: $(lfs check servers $DW_JOB_<NAME>)"
+    fi
+    echo "df: $df_output"
+
+    sleep 30
+
+    if [ "$type" == "lustre" ]; then
+       echo "lfs df: $(lfs df $DW_JOB_<NAME>)"
+       echo "lfs check servers: $(lfs check servers $DW_JOB_<NAME>)"
+    fi
+    echo "df: $df_output"
     exit 1
 fi
 EOF
@@ -403,7 +450,7 @@ EOF
     runit_file=$(create_capacity_file xfs)
     ${FLUX_A} --setattr=dw="\
         #DW jobdw type=xfs name=xfs capacity=${GB_PER_NODE}GB" \
-        $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT
+        $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT xfs
 }
 
 # bats test_tags=tag:gfs2, tag:capacity
@@ -411,7 +458,7 @@ EOF
     runit_file=$(create_capacity_file gfs2)
     ${FLUX_A} --setattr=dw="\
         #DW jobdw type=gfs2 name=gfs2 capacity=${GB_PER_NODE}GB" \
-        $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT
+        $runit_file ${GB_PER_NODE} $CAPACITY_PERCENT gfs2
 }
 
 # bats test_tags=tag:lustre, tag:capacity
@@ -419,5 +466,5 @@ EOF
     runit_file=$(create_capacity_file lustre)
     ${FLUX_A} --setattr=dw="\
         #DW jobdw type=lustre name=lustre capacity=${LUS_CAPACITY}GB" \
-        $runit_file ${LUS_CAPACITY} $CAPACITY_PERCENT
+        $runit_file ${LUS_CAPACITY} $CAPACITY_PERCENT lustre
 }
