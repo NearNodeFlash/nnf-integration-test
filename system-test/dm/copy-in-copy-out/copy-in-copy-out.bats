@@ -220,7 +220,6 @@ function test_copy_in_copy_out() {
         # replace the hyphen in src with underscore since it's being used on the compute node rather than in a directive
         src="${src//-/_}"
 
-        # TODO: is this running on each compute? we're only getting 1 copy offload file at the end
         runit_file=$(create_copyoffload_file)
         echo "runit_file: $runit_file"
         ${FLUX} --setattr=dw="\
