@@ -285,6 +285,33 @@ function teardown {
         ${COMPUTE_CMD}
 }
 
+# Containers - Long Running Non-MPI
+# The copy offload tests in dm-system-test exercise MPI User Containers
+
+# The example-forever profile has a long-running process that never exits and a short
+# postRunTimeoutSeconds, so expect it to fail
+# bats test_tags=tag:gfs2, tag:container, tag:non-mpi, container:long-running
+@test "Container - Long Running (should fail)" {
+    run ! ${FLUX} --setattr=dw="\
+        #DW jobdw type=gfs2 name=containers-gfs2 capacity=${GB_PER_NODE}GB \
+        #DW container name=containers-gfs2 profile=example-forever \
+            DW_JOB_foo_local_storage=containers-gfs2" \
+        ${COMPUTE_CMD}
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "user container(s) failed to complete after" ]]
+}
+
+# This test uses the same example-forever profile, but with a no-wait option
+# so it should not wait for the container to finish and should not fail
+# bats test_tags=tag:gfs2, tag:container, tag:non-mpi, container:long-running, container:no-wait
+@test "Container - Long Running (no wait)" {
+    ${FLUX} --setattr=dw="\
+        #DW jobdw type=gfs2 name=containers-gfs2 capacity=${GB_PER_NODE}GB \
+        #DW container name=containers-gfs2 profile=example-forever-nowait \
+            DW_JOB_foo_local_storage=containers-gfs2" \
+        ${COMPUTE_CMD}
+}
+
 # Containers - Unsupported File systems (xfs & raw)
 
 # bats test_tags=tag:xfs, tag:container, tag:unsupported
