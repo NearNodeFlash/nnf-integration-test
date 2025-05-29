@@ -114,13 +114,13 @@ function create_copyoffload_file {
     chmod +x $runit_file
     cat << 'EOF' >> $runit_file
 #!/bin/bash
-echo "starting test"
+echo "starting test on $(hostname)"
 set -e
 
-token_file=$1
-src=$2
-dst=$3
-profile=$4
+src=$1
+dst=$2
+profile=$3
+
 prog=<COPY_OFFLOAD_TEST_BIN>
 
 jobid=$FLUX_JOB_ID
@@ -130,21 +130,20 @@ wf=fluxjob-$jobuid
 echo "jobid:      $jobid"
 echo "workflow:   $wf"
 echo "hostname:   $(hostname)"
-echo "token_file: $token_file"
 echo "src:        $src"
 echo "dst:        $dst"
 echo "profile:    $profile"
 
-if [[ -z "$token_file" || -z "$src" || -z "$dst" || -z "$profile" ]]; then
+if [[ -z "$src" || -z "$dst" || -z "$profile" ]]; then
     echo "Error: One or more required variables are not set"
     exit 1
 fi
 
-
-# TODO: reword this to be more generic - if we need this, it means flux isn't giving us env vars
-# This should be set for us by flux, but if not, and kubectl is available, go and get it.
-if [ -z $DW_WORKFLOW_TOKEN ]; then
-    echo "DW_WORKFLOW_TOKEN not set, trying to get it from kubectl"
+# For HPE systems with older versions of flux, fake out the bits that flux will provide on LLNL
+# systems. Do this if the env vars are not set for us by flux. This assumes each compute has access
+# to k8s.
+if [[ -z "$DW_WORKFLOW_TOKEN" || -z "$NNF_CONTAINER_LAUNCHER" || -z "$NNF_CONTAINER_PORTS" ]]; then
+    echo "Fetching workflow information from kubernetes rather than flux..."
 
     if command -v kubectl >/dev/null 2>&1 && kubectl version --request-timeout=5s >/dev/null 2>&1; then
         echo "kubectl is available and can contact the server"
@@ -153,11 +152,9 @@ if [ -z $DW_WORKFLOW_TOKEN ]; then
         exit 1
     fi
 
-    kubectl get secret `kubectl get workflow $wf -ojson | jq -rM .status.workflowToken.secretName` -ojson | jq -rM .data.token | base64 -d > $token_file
-
     export NNF_CONTAINER_LAUNCHER=$(kubectl get workflow $wf -ojson | jq -rM '.status.env["NNF_CONTAINER_LAUNCHER"]')
     export NNF_CONTAINER_PORTS=$(kubectl get workflow $wf -ojson | jq -rM '.status.env["NNF_CONTAINER_PORTS"]')
-    export DW_WORKFLOW_TOKEN=$(<$token_file)
+    export DW_WORKFLOW_TOKEN=$(kubectl get secret `kubectl get workflow $wf -ojson | jq -rM .status.workflowToken.secretName` -ojson | jq -rM .data.token | base64 -d)
 fi
 
 echo "NNF* env vars:"
@@ -177,7 +174,6 @@ args=(
     -D $dst
     -P $profile
 )
-
 echo "Running $prog ${args[@]}..."
 ID=$($prog "${args[@]}")
 prog_status=$?
@@ -186,14 +182,6 @@ if [[ $prog_status -ne 0 ]]; then
     echo "  Command: $prog ${args[@]}"
     exit $prog_status
 fi
-
-# # Get the ID for the copy offload
-# sleep 1
-# args=(
-#     -l
-# )
-# echo "Running $prog ${args[@]}..."
-# ID=$($prog "${args[@]}")
 echo "ID: $ID"
 
 # Wait for the copy offload to finish
@@ -205,6 +193,7 @@ args=(
 echo "Running $prog ${args[@]}..."
 $prog "${args[@]}"
 EOF
+
     # replace the prog name
     sed -i "s/<COPY_OFFLOAD_TEST_BIN>/$COPY_OFFLOAD_TEST_BIN/g" $runit_file
 
@@ -229,10 +218,7 @@ function test_copy_in_copy_out() {
     # Use copy offload to do the copy_out (copy_in isn't supported)
     if [[ "$copy_out_method" == "offload" ]]; then
         # replace the hyphen in src with underscore since it's being used on the compute node rather than in a directive
-        echo "SOURCE: $src"
         src="${src//-/_}"
-        echo "AFTER SOURCE: $src"
-        token="change-me"
 
         # TODO: is this running on each compute? we're only getting 1 copy offload file at the end
         runit_file=$(create_copyoffload_file)
@@ -242,7 +228,7 @@ function test_copy_in_copy_out() {
             #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test \
             #DW container name=copyoff-container profile=copy-offload-default \
                 DW_JOB_my_storage=copyout-test DW_GLOBAL_lus=$GLOBAL_LUSTRE_ROOT" \
-            $runit_file $token $src $dest $DM_PROFILE
+            $runit_file $src $dest $DM_PROFILE
     else
         ${FLUX} --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
