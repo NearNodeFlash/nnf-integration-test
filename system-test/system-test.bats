@@ -426,14 +426,17 @@ else
        echo "lfs df: $(lfs df $DW_JOB_<NAME>)"
        echo "lfs check servers: $(lfs check servers $DW_JOB_<NAME>)"
     fi
+    df_output=$(df -BG "$DW_JOB_<NAME>" 2>/dev/null | tail -1)
     echo "df: $df_output"
 
+    echo "sleeping for 30 seconds..."
     sleep 30
 
     if [ "$type" == "lustre" ]; then
        echo "lfs df: $(lfs df $DW_JOB_<NAME>)"
        echo "lfs check servers: $(lfs check servers $DW_JOB_<NAME>)"
     fi
+    df_output=$(df -BG "$DW_JOB_<NAME>" 2>/dev/null | tail -1)
     echo "df: $df_output"
     exit 1
 fi
