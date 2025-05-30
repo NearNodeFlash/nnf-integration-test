@@ -378,7 +378,7 @@ jobs:
   # always() to ensure this runs even when system-test does not.
   dm-system-test:
     needs: system-test
-    # if: ${{ always() && ( github.event_name == 'schedule' || inputs.runDMSystemTest == true ) }}
+    if: ${{ always() && ( github.event_name == 'schedule' || inputs.runDMSystemTest == true ) }}
     runs-on: ${{ inputs.system || 'htx-1' }}
     steps:
       - name: Checkout
