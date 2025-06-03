@@ -55,17 +55,25 @@ if [ "${COPY_OFFLOAD}" != "" ]; then
     copy_out_method="offload"
 fi
 
+# Default to using the lib-copy-offload-tester binary for copy offload tests
+if [[ -z "${COPY_OFFLOAD_TEST_BIN}" ]]; then
+    COPY_OFFLOAD_TEST_BIN=lib-copy-offload-tester
+fi
+
 # Flux command
-FLUX="flux run -l -N${N} --wait-event=clean"
+FLUX="flux run -l -N${N}"
+FLUX_A="flux alloc -N${N}"
 
 # Use a Flux queue
 if [ "${Q}" != "" ]; then
     FLUX+=" -q ${Q}"
+    FLUX_A+=" -q ${Q}"
 fi
 
 # Require specific rabbits
 if [ "${R}" != "" ]; then
     FLUX+=" --requires=hosts:${R}"
+    FLUX_A+=" --requires=hosts:${R}"
 fi
 
 # Read the test file and create a bats test for each entry
@@ -75,6 +83,9 @@ for ((i = 0; i < NUM_TESTS; i++)); do
 done
 
 function setup() {
+    # Create a test tmpdir at the supplied prefix (e.g. /home/user/nnf/tmp.x8e8f0a/)
+    export TEST_TMPDIR=$(mktemp -d -p ${TEST_TMPDIR_PREFIX})
+
     # Make a unique directory to support simulteanous tests
     export UUID=$(uuidgen | cut -d'-' -f1)
     export DESTDIR=${TESTDIR}/${UUID}
@@ -83,12 +94,115 @@ function setup() {
 }
 
 function teardown() {
+    if [[ -n "$TEST_TMPDIR" ]]; then
+        rm -rf $TEST_TMPDIR
+    fi
+
     # clean up if it succeeded, otherwise leave it around for inspection (if no other tests run afterwards)
     if [[ "${BATS_TEST_COMPLETED}" -eq 1 ]]; then
         rm -rf ${DESTDIR}
     fi
+
 }
 
+# Create a copy offload file to be used in the test by the flux job. This file is used to
+# run the lib-copy-offload-tester program. This file is created in the test tmpdir and
+# is passed to the flux job. The file is created with the following contents:
+function create_copyoffload_file {
+    runit_file="$TEST_TMPDIR/run-it.sh"
+    touch $runit_file
+    chmod +x $runit_file
+    cat << 'EOF' >> $runit_file
+#!/bin/bash
+echo "starting test on $(hostname)"
+set -e
+
+src=$1
+dst=$2
+profile=$3
+
+prog=<COPY_OFFLOAD_TEST_BIN>
+
+jobid=$FLUX_JOB_ID
+jobuid=$(echo $FLUX_KVS_NAMESPACE | cut -d '-' -f2)
+wf=fluxjob-$jobuid
+
+echo "jobid:      $jobid"
+echo "workflow:   $wf"
+echo "hostname:   $(hostname)"
+echo "src:        $src"
+echo "dst:        $dst"
+echo "profile:    $profile"
+
+if [[ -z "$src" || -z "$dst" || -z "$profile" ]]; then
+    echo "Error: One or more required variables are not set"
+    exit 1
+fi
+
+# For HPE systems with older versions of flux, fake out the bits that flux will provide on LLNL
+# systems. Do this if the env vars are not set for us by flux. This assumes each compute has access
+# to k8s.
+if [[ -z "$DW_WORKFLOW_TOKEN" || -z "$NNF_CONTAINER_LAUNCHER" || -z "$NNF_CONTAINER_PORTS" ]]; then
+    echo "Fetching workflow information from kubernetes rather than flux..."
+
+    if command -v kubectl >/dev/null 2>&1 && kubectl version --request-timeout=5s >/dev/null 2>&1; then
+        echo "kubectl is available and can contact the server"
+    else
+        echo "kubectl is not available or cannot contact the server"
+        exit 1
+    fi
+
+    export NNF_CONTAINER_LAUNCHER=$(kubectl get workflow $wf -ojson | jq -rM '.status.env["NNF_CONTAINER_LAUNCHER"]')
+    export NNF_CONTAINER_PORTS=$(kubectl get workflow $wf -ojson | jq -rM '.status.env["NNF_CONTAINER_PORTS"]')
+    export DW_WORKFLOW_TOKEN=$(kubectl get secret `kubectl get workflow $wf -ojson | jq -rM .status.workflowToken.secretName` -ojson | jq -rM .data.token | base64 -d)
+fi
+
+echo "NNF* env vars:"
+env | grep -E "NNF|DW_JOB|WORKFLOW|TOKEN"
+
+# expand the $DW_JOB variable
+src=$(eval echo "$src")
+echo "src: $src"
+
+export DW_WORKFLOW_NAME=$wf
+export DW_WORKFLOW_NAMESPACE=default
+
+# Start a copy offload and capture the ID
+args=(
+    -o
+    -S $src
+    -D $dst
+    -P $profile
+)
+echo "Running $prog ${args[@]}..."
+ID=$($prog "${args[@]}")
+prog_status=$?
+if [[ $prog_status -ne 0 ]]; then
+    echo "ERROR: $prog failed with exit code $prog_status"
+    echo "  Command: $prog ${args[@]}"
+    exit $prog_status
+fi
+echo "ID: $ID"
+
+# Wait for the copy offload to finish
+args=(
+    -q
+    -j $ID
+    -w -1
+)
+echo "Running $prog ${args[@]}..."
+$prog "${args[@]}"
+EOF
+
+    # replace the prog name
+    sed -i "s/<COPY_OFFLOAD_TEST_BIN>/$COPY_OFFLOAD_TEST_BIN/g" $runit_file
+
+    echo $runit_file
+}
+
+# This function runs the copy_in/copy_out test. It takes a single argument, which is the index
+# of the test to run. It reads the test parameters from the JSON file and runs the test using
+# flux.
 function test_copy_in_copy_out() {
     local idx=$1
     local src=$(cat $tests_file | jq -r ".[$idx].src")
@@ -104,14 +218,16 @@ function test_copy_in_copy_out() {
     # Use copy offload to do the copy_out (copy_in isn't supported)
     if [[ "$copy_out_method" == "offload" ]]; then
         # replace the hyphen in src with underscore since it's being used on the compute node rather than in a directive
-        echo "SOURCE: $src"
         src="${src//-/_}"
-        echo "AFTER SOURCE: $src"
+
+        runit_file=$(create_copyoffload_file)
+        echo "runit_file: $runit_file"
         ${FLUX} --setattr=dw="\
-            #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
-            #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test" \
-            bash -c "hostname && \
-                dm-client-go -source=$src -destination=$dest -profile=$DM_PROFILE"
+            #DW jobdw type=$fs_type capacity=10GiB name=copyout-test requires=copy-offload \
+            #DW copy_in source=$copy_in_src destination=\$DW_JOB_copyout-test \
+            #DW container name=copyoff-container profile=copy-offload-default \
+                DW_JOB_my_storage=copyout-test DW_GLOBAL_lus=$GLOBAL_LUSTRE_ROOT" \
+            $runit_file $src $dest $DM_PROFILE
     else
         ${FLUX} --setattr=dw="\
             #DW jobdw type=$fs_type capacity=10GiB name=copyout-test \
@@ -127,13 +243,24 @@ function test_copy_in_copy_out() {
 
     # grab the output from ls
     local ls_output=$(/bin/ls -l ${expected})
-    echo "$ls_output" # print it out in case of fail
+    echo "ls_output: $ls_output" # print it out in case of fail
 
-    # if lustre, then no index mounts and only 1 file
+    local actual_count=$(echo "$ls_output" | wc -l)
+    local expected_count
+
     if [[ "$fs_type" == "lustre" ]]; then
-        echo "$ls_output" | wc -l | grep 1
-    # otherwise verify the number of lines from `ls -l`
+        expected_count=1
     else
-        echo "$ls_output" | wc -l | grep $N
+        expected_count=$N
+    fi
+
+    if [[ "$actual_count" -ne "$expected_count" ]]; then
+        echo "ERROR: File count mismatch for $expected"
+        echo "  Filesystem type: $fs_type"
+        echo "  Expected count: $expected_count"
+        echo "  Actual count:   $actual_count"
+        echo "  ls output:"
+        echo "$ls_output"
+        return 1
     fi
 }
