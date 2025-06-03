@@ -598,6 +598,58 @@ configure_v0_1_16_manifests() {
     msg "Created branch $BRANCH"
 }
 
+# =====================================
+# Configure v0.1.17 manifests.
+#
+configure_v0_1_17_manifests() {
+    TAG=v0.1.17
+    TARBALL="manifests-$TAG.tar"
+    BRANCH="rel-$TAG"
+    git checkout main
+    git checkout -b "$BRANCH"
+    get_and_unpack_manfest "$TAG" "$TARBALL"
+    set_branch_in_bootstraps "$BRANCH"
+
+    git mv environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig
+    # Remove the patches section.
+    # Chop off the end of the file, where we think the patches section lives.
+    sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
+
+    git add environments
+    git commit -s -m "Release $TAG"
+
+    ./tools/verify-deployment.sh -e "$GITOPS_ENV"
+
+    $NO_PUSH_DBG git push --set-upstream origin "$BRANCH"
+    msg "Created branch $BRANCH"
+}
+
+# =====================================
+# Configure v0.1.18 manifests.
+#
+configure_v0_1_18_manifests() {
+    TAG=v0.1.18
+    TARBALL="manifests-$TAG.tar"
+    BRANCH="rel-$TAG"
+    git checkout main
+    git checkout -b "$BRANCH"
+    get_and_unpack_manfest "$TAG" "$TARBALL"
+    set_branch_in_bootstraps "$BRANCH"
+
+    git mv environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig
+    # Remove the patches section.
+    # Chop off the end of the file, where we think the patches section lives.
+    sed -n '1,/^patches/p' environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml-orig | grep -vE '^patches:' > environments/"$GITOPS_ENV"/nnf-dm/kustomization.yaml
+
+    git add environments
+    git commit -s -m "Release $TAG"
+
+    ./tools/verify-deployment.sh -e "$GITOPS_ENV"
+
+    $NO_PUSH_DBG git push --set-upstream origin "$BRANCH"
+    msg "Created branch $BRANCH"
+}
+
 create_new_repo
 configure_v0_1_11_manifests
 configure_v0_1_12_manifests
@@ -605,6 +657,8 @@ configure_v0_1_13_manifests
 configure_v0_1_14_manifests
 configure_v0_1_15_manifests
 configure_v0_1_16_manifests
+configure_v0_1_17_manifests
+configure_v0_1_18_manifests
 
 if [[ -z $NO_PUSH ]]; then
     echo
