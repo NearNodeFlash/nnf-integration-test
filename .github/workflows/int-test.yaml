@@ -75,277 +75,277 @@ env:
   # SLACK_CHANNEL_ID: C06SMGMM3PY # rabbit-notifications-sandbox
   RUN_URL: "<https://github.com/NearNodeFlash/nnf-integration-test/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
 jobs:
-  int-test:
-    runs-on: ${{ inputs.system || 'htx-1' }}
-    outputs:
-      test-result: ${{ steps.int-test.outcome }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Version
-        run: ./git-version-gen
+  # int-test:
+  #   runs-on: ${{ inputs.system || 'htx-1' }}
+  #   outputs:
+  #     test-result: ${{ steps.int-test.outcome }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Version
+  #       run: ./git-version-gen
 
-      # If this is a manual run (workflow_dispatch trigger), then override the env vars with the input values.
-      - name: Override TEST_TARGET with manual input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "TEST_TARGET=${{ inputs.testTarget }}" >> $GITHUB_ENV
-      - name: Override PROCS with manual input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "PROCS=${{ inputs.procs }}" >> $GITHUB_ENV
-      - name: Override ROUNDS with manual input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "ROUNDS=${{ inputs.rounds }}" >> $GITHUB_ENV
-      - name: Override LTIMEOUT with manual input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "LTIMEOUT=${{ inputs.lTimeout }}" >> $GITHUB_ENV
-      - name: Override HTIMEOUT with manual input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "HTIMEOUT=${{ inputs.hTimeout }}" >> $GITHUB_ENV
-      - name: Override NOTIFY_SLACK with manual input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "NOTIFY_SLACK=${{ inputs.notifySlack }}" >> $GITHUB_ENV
+  #     # If this is a manual run (workflow_dispatch trigger), then override the env vars with the input values.
+  #     - name: Override TEST_TARGET with manual input
+  #       if: github.event_name == 'workflow_dispatch'
+  #       run: |
+  #         echo "TEST_TARGET=${{ inputs.testTarget }}" >> $GITHUB_ENV
+  #     - name: Override PROCS with manual input
+  #       if: github.event_name == 'workflow_dispatch'
+  #       run: |
+  #         echo "PROCS=${{ inputs.procs }}" >> $GITHUB_ENV
+  #     - name: Override ROUNDS with manual input
+  #       if: github.event_name == 'workflow_dispatch'
+  #       run: |
+  #         echo "ROUNDS=${{ inputs.rounds }}" >> $GITHUB_ENV
+  #     - name: Override LTIMEOUT with manual input
+  #       if: github.event_name == 'workflow_dispatch'
+  #       run: |
+  #         echo "LTIMEOUT=${{ inputs.lTimeout }}" >> $GITHUB_ENV
+  #     - name: Override HTIMEOUT with manual input
+  #       if: github.event_name == 'workflow_dispatch'
+  #       run: |
+  #         echo "HTIMEOUT=${{ inputs.hTimeout }}" >> $GITHUB_ENV
+  #     - name: Override NOTIFY_SLACK with manual input
+  #       if: github.event_name == 'workflow_dispatch'
+  #       run: |
+  #         echo "NOTIFY_SLACK=${{ inputs.notifySlack }}" >> $GITHUB_ENV
 
-      # Optionally send a slack message
-      - name: Start Slack Message
-        if: ${{ env.NOTIFY_SLACK == 'true' }}
-        uses: archive/github-actions-slack@master
-        id: start-message
-        with:
-          slack-function: send-message
-          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
-          slack-channel: ${{ env.SLACK_CHANNEL_ID }}
-          slack-optional-blocks: >-
-            [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "NNF Integration Test",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*System*\n${{ env.SYSTEM }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Test Type*\n${{ env.TEST_TARGET }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Num Procs*\n${{ env.PROCS }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Rounds*\n${{ env.ROUNDS }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Status*\n:hourglass: In Progress"
-                  }
-                ]
-              },
-              {
-                "type": "divider"
-              }
-            ]
+  #     # Optionally send a slack message
+  #     - name: Start Slack Message
+  #       if: ${{ env.NOTIFY_SLACK == 'true' }}
+  #       uses: archive/github-actions-slack@master
+  #       id: start-message
+  #       with:
+  #         slack-function: send-message
+  #         slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+  #         slack-channel: ${{ env.SLACK_CHANNEL_ID }}
+  #         slack-optional-blocks: >-
+  #           [
+  #             {
+  #               "type": "header",
+  #               "text": {
+  #                 "type": "plain_text",
+  #                 "text": "NNF Integration Test",
+  #                 "emoji": true
+  #               }
+  #             },
+  #             {
+  #               "type": "section",
+  #               "text": {
+  #                 "type": "mrkdwn",
+  #                 "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
+  #               }
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*System*\n${{ env.SYSTEM }}"
+  #                 },
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Test Type*\n${{ env.TEST_TARGET }}"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Num Procs*\n${{ env.PROCS }}"
+  #                 },
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Rounds*\n${{ env.ROUNDS }}"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Status*\n:hourglass: In Progress"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "divider"
+  #             }
+  #           ]
 
-      # Setup and Run the Test
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version-file: "go.mod"
-          cache: true
-      - name: Install Ginkgo and Ginkgo CLI
-        run: make init
-      - name: Run int-test (P=${{ env.P }} ${{ env.TEST_TARGET }}) ${{ env.ROUNDS }} time(s) on ${{ env.SYSTEM }}
-        id: int-test
-        shell: bash
-        env:
-          P: ${{ env.PROCS }}
-          HTIMEOUT: ${{ env.HTIMEOUT }}
-          LTIMEOUT: ${{ env.LTIMEOUT }}
-        run: |
-          for i in {1..${{ env.ROUNDS }}}; do
-            echo ""
-            echo "--------------------"
-            echo "Attempt start: $i"
-            echo "--------------------"
-            echo ""
-            make ${{ env.TEST_TARGET }}
-            echo ""
-            echo "@@@@@@@@@@@@@@@@@@@@"
-            echo "Attempt end: $i"
-            echo "@@@@@@@@@@@@@@@@@@@@"
-            echo ""
-          done
+  #     # Setup and Run the Test
+  #     - name: Setup Go
+  #       uses: actions/setup-go@v3
+  #       with:
+  #         go-version-file: "go.mod"
+  #         cache: true
+  #     - name: Install Ginkgo and Ginkgo CLI
+  #       run: make init
+  #     - name: Run int-test (P=${{ env.P }} ${{ env.TEST_TARGET }}) ${{ env.ROUNDS }} time(s) on ${{ env.SYSTEM }}
+  #       id: int-test
+  #       shell: bash
+  #       env:
+  #         P: ${{ env.PROCS }}
+  #         HTIMEOUT: ${{ env.HTIMEOUT }}
+  #         LTIMEOUT: ${{ env.LTIMEOUT }}
+  #       run: |
+  #         for i in {1..${{ env.ROUNDS }}}; do
+  #           echo ""
+  #           echo "--------------------"
+  #           echo "Attempt start: $i"
+  #           echo "--------------------"
+  #           echo ""
+  #           make ${{ env.TEST_TARGET }}
+  #           echo ""
+  #           echo "@@@@@@@@@@@@@@@@@@@@"
+  #           echo "Attempt end: $i"
+  #           echo "@@@@@@@@@@@@@@@@@@@@"
+  #           echo ""
+  #         done
 
-      # Optionally update the slack message with a failure
-      - name: Failure Slack Message
-        if: ${{ env.NOTIFY_SLACK == 'true' && failure() }}
-        uses: archive/github-actions-slack@master
-        with:
-          slack-function: update-message
-          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
-          slack-channel: ${{ env.SLACK_CHANNEL_ID }}
-          slack-update-message-ts: ${{ fromJson(steps.start-message.outputs.slack-result).response.message.ts }}
-          slack-optional-blocks: >-
-            [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "NNF Integration Test",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*System*\n${{ env.SYSTEM }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Test Type*\n${{ env.TEST_TARGET }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Num Procs*\n${{ env.PROCS }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Rounds*\n${{ env.ROUNDS }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Status*\n:red_circle: Test Failed"
-                  }
-                ]
-              },
-              {
-                "type": "divider"
-              }
-            ]
+  #     # Optionally update the slack message with a failure
+  #     - name: Failure Slack Message
+  #       if: ${{ env.NOTIFY_SLACK == 'true' && failure() }}
+  #       uses: archive/github-actions-slack@master
+  #       with:
+  #         slack-function: update-message
+  #         slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+  #         slack-channel: ${{ env.SLACK_CHANNEL_ID }}
+  #         slack-update-message-ts: ${{ fromJson(steps.start-message.outputs.slack-result).response.message.ts }}
+  #         slack-optional-blocks: >-
+  #           [
+  #             {
+  #               "type": "header",
+  #               "text": {
+  #                 "type": "plain_text",
+  #                 "text": "NNF Integration Test",
+  #                 "emoji": true
+  #               }
+  #             },
+  #             {
+  #               "type": "section",
+  #               "text": {
+  #                 "type": "mrkdwn",
+  #                 "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
+  #               }
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*System*\n${{ env.SYSTEM }}"
+  #                 },
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Test Type*\n${{ env.TEST_TARGET }}"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Num Procs*\n${{ env.PROCS }}"
+  #                 },
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Rounds*\n${{ env.ROUNDS }}"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Status*\n:red_circle: Test Failed"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "divider"
+  #             }
+  #           ]
 
-      # Optionally update the slack message with success
-      - name: Success Slack Message
-        if: ${{ env.NOTIFY_SLACK == 'true' && success() }}
-        uses: archive/github-actions-slack@master
-        with:
-          slack-function: update-message
-          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
-          slack-channel: ${{ env.SLACK_CHANNEL_ID }}
-          slack-update-message-ts: ${{ fromJson(steps.start-message.outputs.slack-result).response.message.ts }}
-          slack-optional-blocks: >-
-            [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "NNF Integration Test",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*System*\n${{ env.SYSTEM }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Test Type*\n${{ env.TEST_TARGET }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Num Procs*\n${{ env.PROCS }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Rounds*\n${{ env.ROUNDS }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Status*\n:green_circle: Test Passed"
-                  }
-                ]
-              },
-              {
-                "type": "divider"
-              }
-            ]
+  #     # Optionally update the slack message with success
+  #     - name: Success Slack Message
+  #       if: ${{ env.NOTIFY_SLACK == 'true' && success() }}
+  #       uses: archive/github-actions-slack@master
+  #       with:
+  #         slack-function: update-message
+  #         slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN }}
+  #         slack-channel: ${{ env.SLACK_CHANNEL_ID }}
+  #         slack-update-message-ts: ${{ fromJson(steps.start-message.outputs.slack-result).response.message.ts }}
+  #         slack-optional-blocks: >-
+  #           [
+  #             {
+  #               "type": "header",
+  #               "text": {
+  #                 "type": "plain_text",
+  #                 "text": "NNF Integration Test",
+  #                 "emoji": true
+  #               }
+  #             },
+  #             {
+  #               "type": "section",
+  #               "text": {
+  #                 "type": "mrkdwn",
+  #                 "text": "Run ${{ env.RUN_URL }}\n_triggered via ${{ github.event_name }}_"
+  #               }
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*System*\n${{ env.SYSTEM }}"
+  #                 },
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Test Type*\n${{ env.TEST_TARGET }}"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Num Procs*\n${{ env.PROCS }}"
+  #                 },
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Rounds*\n${{ env.ROUNDS }}"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "section",
+  #               "fields": [
+  #                 {
+  #                   "type": "mrkdwn",
+  #                   "text": "*Status*\n:green_circle: Test Passed"
+  #                 }
+  #               ]
+  #             },
+  #             {
+  #               "type": "divider"
+  #             }
+  #           ]
 
   # Only run system test after int-test is successful. If int-test fails, it can leave around
   # artifacts.
   system-test:
-    needs: int-test
-    if: ${{ github.event_name == 'schedule' || inputs.runSystemTest == true }}
+    # needs: int-test
+    # if: ${{ github.event_name == 'schedule' || inputs.runSystemTest == true }}
     runs-on: ${{ inputs.system || 'htx-1' }}
     steps:
       - name: Checkout
