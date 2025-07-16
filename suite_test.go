@@ -43,7 +43,7 @@ import (
 
 	dwsv1alpha4 "github.com/DataWorkflowServices/dws/api/v1alpha4"
 	lusv1alpha1 "github.com/NearNodeFlash/lustre-fs-operator/api/v1alpha1"
-	nnfv1alpha7 "github.com/NearNodeFlash/nnf-sos/api/v1alpha7"
+	nnfv1alpha8 "github.com/NearNodeFlash/nnf-sos/api/v1alpha8"
 )
 
 var (
@@ -113,7 +113,7 @@ var _ = BeforeSuite(func() {
 	err = lusv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = nnfv1alpha7.AddToScheme(scheme.Scheme)
+	err = nnfv1alpha8.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating Client")
