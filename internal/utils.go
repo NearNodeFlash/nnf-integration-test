@@ -30,7 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	dwsv1alpha4 "github.com/DataWorkflowServices/dws/api/v1alpha4"
+	dwsv1alpha6 "github.com/DataWorkflowServices/dws/api/v1alpha6"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,13 +41,13 @@ const (
 	helperImage = "ghcr.io/nearnodeflash/nnf-integration-test-helper"
 )
 
-func GetSystemConfiguraton(ctx context.Context, k8sClient client.Client) *dwsv1alpha4.SystemConfiguration {
+func GetSystemConfiguraton(ctx context.Context, k8sClient client.Client) *dwsv1alpha6.SystemConfiguration {
 	// TODO: Move this to a global variable and initialized in the test suite.
 	// Note that putting the GET in Prepare will not work for things like
 	// WithPersistentLustre() since those options run new MakeTests and do not
 	// run prepare.
 
-	systemConfig := &dwsv1alpha4.SystemConfiguration{}
+	systemConfig := &dwsv1alpha6.SystemConfiguration{}
 	Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "default", Namespace: corev1.NamespaceDefault}, systemConfig)).To(Succeed())
 
 	// Except there to be at least 1 compute and storage node
@@ -147,9 +147,9 @@ func runHelperPod(ctx context.Context, k8sClient client.Client, t *T, name, comm
 		},
 	}
 
-	dwsv1alpha4.InheritParentLabels(pod, t.workflow)
-	dwsv1alpha4.AddOwnerLabels(pod, t.workflow)
-	dwsv1alpha4.AddWorkflowLabels(pod, t.workflow)
+	dwsv1alpha6.InheritParentLabels(pod, t.workflow)
+	dwsv1alpha6.AddOwnerLabels(pod, t.workflow)
+	dwsv1alpha6.AddWorkflowLabels(pod, t.workflow)
 
 	Expect(k8sClient.Create(ctx, pod)).To(Succeed())
 	t.helperPods = append(t.helperPods, pod)
