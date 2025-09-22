@@ -57,7 +57,7 @@ var tests = []*T{
 	//   MakeTest("Pending", "#DW ...").Pending()
 	//
 	// Mark a test case so it will stop after the workflow achieves the desired state of PreRun
-	//   MakeTest("Stop After", "#DW ...").StopAfter(wsv1alpha1.StatePreRun),
+	//   MakeTest("Stop After", "#DW ...").StopAfter(dwsv1alpha6.StatePreRun),
 	//
 	// Duplicate a test case 20 times.
 	//   DuplicateTest(
@@ -80,6 +80,10 @@ var tests = []*T{
 	MakeTest("GFS2 with Storage Profile",
 		"#DW jobdw type=gfs2 name=gfs2-storage-profile capacity=50GB profile=my-gfs2-storage-profile").
 		WithStorageProfile(),
+	MakeTest("XFS with Storage Profile and LV Create",
+		"#DW jobdw type=xfs name=xfs-storage-profile capacity=14TB profile=my-xfs-storage-profile").
+		WithStorageProfileLvCreate("--zero n --activate y --type raid5 --nosync --extents $PERCENT_VG --stripes $DEVICE_NUM-1 --stripesize=64KiB --name $LV_NAME $VG_NAME"),
+
 
 	// Persistent
 	MakeTest("Persistent Lustre",
