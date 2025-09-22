@@ -99,9 +99,10 @@ type TStorageProfile struct {
 	name          string
 	externalMgs   string
 	standaloneMgt string
+	lvCreateCmd   string
 }
 
-// WithStorageProfile will manage a storage profile of of name 'name'
+// WithStorageProfile will manage a storage profile of name 'name'
 func (t *T) WithStorageProfile() *T {
 
 	for _, directive := range t.directives {
@@ -130,6 +131,13 @@ func (t *T) WithStorageProfileExternalMGS(externalMGS string) *T {
 	t.options.storageProfile.externalMgs = externalMGS
 
 	return t.WithLabels("externalMGS")
+}
+
+func (t *T) WithStorageProfileLvCreate(lvCreateCmd string) *T {
+	t.WithStorageProfile()
+	t.options.storageProfile.lvCreateCmd = lvCreateCmd
+
+	return t.WithLabels("lvCreateCmd")
 }
 
 // WithExternalComputes engages external computes for the the test.
@@ -338,6 +346,10 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 			profile.Data.LustreStorage.CombinedMGTMDT = false
 			profile.Data.LustreStorage.ExternalMGS = ""
 			profile.Data.LustreStorage.StandaloneMGTPoolName = o.storageProfile.standaloneMgt
+		}
+
+		if o.storageProfile.lvCreateCmd != "" {
+			profile.Data.XFSStorage.CmdLines.LvCreate = o.storageProfile.lvCreateCmd
 		}
 
 		Expect(k8sClient.Create(ctx, profile)).To(Succeed())
