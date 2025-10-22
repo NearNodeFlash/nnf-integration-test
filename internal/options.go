@@ -35,7 +35,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	dwsv1alpha6 "github.com/DataWorkflowServices/dws/api/v1alpha6"
+	dwsv1alpha7 "github.com/DataWorkflowServices/dws/api/v1alpha7"
 	lusv1alpha1 "github.com/NearNodeFlash/lustre-fs-operator/api/v1alpha1"
 	nnfv1alpha8 "github.com/NearNodeFlash/nnf-sos/api/v1alpha8"
 
@@ -57,7 +57,7 @@ type TOptions struct {
 	hardwareRequired    bool
 	lowTimeout          time.Duration
 	highTimeout         time.Duration
-	highTimeoutStates   []dwsv1alpha6.WorkflowState
+	highTimeoutStates   []dwsv1alpha7.WorkflowState
 	useExternalComputes bool
 }
 
@@ -67,21 +67,21 @@ func (o *TOptions) hasComplexOptions() bool {
 }
 
 type TStopAfter struct {
-	state dwsv1alpha6.WorkflowState
+	state dwsv1alpha7.WorkflowState
 }
 
 // Stop after lets you stop a test after a given state is reached
-func (t *T) StopAfter(state dwsv1alpha6.WorkflowState) *T {
+func (t *T) StopAfter(state dwsv1alpha7.WorkflowState) *T {
 	t.options.stopAfter = &TStopAfter{state: state}
 	return t
 }
 
 type TExpectError struct {
-	state dwsv1alpha6.WorkflowState
+	state dwsv1alpha7.WorkflowState
 }
 
 // Expect an error at the designed state; Proceed to teardown
-func (t *T) ExpectError(state dwsv1alpha6.WorkflowState) *T {
+func (t *T) ExpectError(state dwsv1alpha7.WorkflowState) *T {
 	t.options.expectError = &TExpectError{state: state}
 	t.options.stopAfter = &TStopAfter{state: state}
 	return t.WithLabels("error")
