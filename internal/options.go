@@ -35,9 +35,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	dwsv1alpha6 "github.com/DataWorkflowServices/dws/api/v1alpha6"
+	dwsv1alpha7 "github.com/DataWorkflowServices/dws/api/v1alpha7"
 	lusv1alpha1 "github.com/NearNodeFlash/lustre-fs-operator/api/v1alpha1"
-	nnfv1alpha8 "github.com/NearNodeFlash/nnf-sos/api/v1alpha8"
+	nnfv1alpha9 "github.com/NearNodeFlash/nnf-sos/api/v1alpha9"
 
 	"github.com/DataWorkflowServices/dws/utils/dwdparse"
 )
@@ -57,7 +57,7 @@ type TOptions struct {
 	hardwareRequired    bool
 	lowTimeout          time.Duration
 	highTimeout         time.Duration
-	highTimeoutStates   []dwsv1alpha6.WorkflowState
+	highTimeoutStates   []dwsv1alpha7.WorkflowState
 	useExternalComputes bool
 }
 
@@ -67,21 +67,21 @@ func (o *TOptions) hasComplexOptions() bool {
 }
 
 type TStopAfter struct {
-	state dwsv1alpha6.WorkflowState
+	state dwsv1alpha7.WorkflowState
 }
 
 // Stop after lets you stop a test after a given state is reached
-func (t *T) StopAfter(state dwsv1alpha6.WorkflowState) *T {
+func (t *T) StopAfter(state dwsv1alpha7.WorkflowState) *T {
 	t.options.stopAfter = &TStopAfter{state: state}
 	return t
 }
 
 type TExpectError struct {
-	state dwsv1alpha6.WorkflowState
+	state dwsv1alpha7.WorkflowState
 }
 
 // Expect an error at the designed state; Proceed to teardown
-func (t *T) ExpectError(state dwsv1alpha6.WorkflowState) *T {
+func (t *T) ExpectError(state dwsv1alpha7.WorkflowState) *T {
 	t.options.expectError = &TExpectError{state: state}
 	t.options.stopAfter = &TStopAfter{state: state}
 	return t.WithLabels("error")
@@ -320,7 +320,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
 
 		// Clone the default profile.
-		defaultProf := &nnfv1alpha8.NnfStorageProfile{
+		defaultProf := &nnfv1alpha9.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "default",
 				Namespace: "nnf-system",
@@ -329,7 +329,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(defaultProf), defaultProf)).To(Succeed())
 
-		profile := &nnfv1alpha8.NnfStorageProfile{
+		profile := &nnfv1alpha9.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.storageProfile.name,
 				Namespace: "nnf-system",
@@ -357,7 +357,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 	if o.containerProfile != nil {
 		// Clone the provided base profile
-		baseProfile := &nnfv1alpha8.NnfContainerProfile{
+		baseProfile := &nnfv1alpha9.NnfContainerProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.containerProfile.base,
 				Namespace: "nnf-system",
@@ -366,7 +366,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(baseProfile), baseProfile)).To(Succeed())
 
-		profile := &nnfv1alpha8.NnfContainerProfile{
+		profile := &nnfv1alpha9.NnfContainerProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.containerProfile.name,
 				Namespace: "nnf-system",
@@ -420,7 +420,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		// Extract the File System Name and MGSNids from the persistent lustre instance. This
 		// assumes an NNF Storage resource is created in the same name as the persistent instance
-		storage := &nnfv1alpha8.NnfStorage{
+		storage := &nnfv1alpha9.NnfStorage{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: corev1.NamespaceDefault,
@@ -557,7 +557,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	if t.options.storageProfile != nil {
 		By(fmt.Sprintf("Deleting storage profile '%s'", o.storageProfile.name))
 
-		profile := &nnfv1alpha8.NnfStorageProfile{
+		profile := &nnfv1alpha9.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.storageProfile.name,
 				Namespace: "nnf-system",
@@ -571,7 +571,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	if t.options.containerProfile != nil {
 		By(fmt.Sprintf("Deleting container profile '%s'", o.containerProfile.name))
 
-		profile := &nnfv1alpha8.NnfContainerProfile{
+		profile := &nnfv1alpha9.NnfContainerProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.containerProfile.name,
 				Namespace: "nnf-system",
