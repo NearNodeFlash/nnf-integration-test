@@ -56,8 +56,11 @@ var tests = []*T{
 	// Mark a test case as Pending(). Ginkgo will not run any tests that have the Pending decorator
 	//   MakeTest("Pending", "#DW ...").Pending()
 	//
-	// Mark a test case so it will stop after the workflow achieves the desired state of PreRun
+	// Mark a test case, so it will stop after the workflow achieves the desired state of PreRun
 	//   MakeTest("Stop After", "#DW ...").StopAfter(dwsv1alpha7.StatePreRun),
+	//
+	// Mark a test case, so it will delay for the specified period after a workflow achieves the desired state of PreRun
+	//   MakeTest("Delay In State", "#DW ...").DelayInState(dwsv1alpha7.StatePreRun, 2*time.Minute),
 	//
 	// Duplicate a test case 20 times.
 	//   DuplicateTest(

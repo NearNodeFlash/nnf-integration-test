@@ -47,10 +47,19 @@ func (t *T) Execute(ctx context.Context, k8sClient client.Client) {
 	for _, fn := range []StateHandler{t.proposal, t.setup, t.dataIn, t.preRun, t.postRun, t.dataOut, t.teardown} {
 		fn(ctx, k8sClient, t.workflow)
 
+		// Extract the current state name from the function
+		fnName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name() // This will return something like `full-import-path.(*T).Function-fm`
+		fnName = fnName[strings.Index(fnName, "(*T).")+5 : len(fnName)-3] // Extract the function name
+		state := dwsv1alpha7.WorkflowState(strings.Title(fnName))
+
+		// Handle DelayInState
+		if t.options.delayInState != nil && state == t.options.delayInState.state {
+			By(fmt.Sprintf("Delaying in state %s for %v", state, t.options.delayInState.duration))
+			time.Sleep(t.options.delayInState.duration)
+		}
+
+		// Handle StopAfter
 		if t.options.stopAfter != nil {
-			fnName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name() // This will return something like `full-import-path.(*T).Function-fm`
-			fnName = fnName[strings.Index(fnName, "(*T).")+5 : len(fnName)-3] // Extract the function name
-			state := dwsv1alpha7.WorkflowState(strings.Title(fnName))
 			if state == t.options.stopAfter.state {
 				break
 			}
