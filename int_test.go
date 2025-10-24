@@ -59,8 +59,9 @@ var tests = []*T{
 	// Mark a test case, so it will stop after the workflow achieves the desired state of PreRun
 	//   MakeTest("Stop After", "#DW ...").StopAfter(dwsv1alpha7.StatePreRun),
 	//
-	// Mark a test case, so it will delay for the specified period after a workflow achieves the desired state of PreRun
-	//   MakeTest("Delay In State", "#DW ...").DelayInState(dwsv1alpha7.StatePreRun, 2*time.Minute),
+	// Mark a test case, so it delays for the specified period after a workflow achieves the desired state
+	// Multiple delays can be added by calling DelayInState multiple times.
+	//   MakeTest("Delay In State", "#DW ...").DelayInState(dwsv1alpha7.StateDataIn, 2*time.Minute).DelayInState(dwsv1alpha7.StateDataOut, 2*time.Minute),
 	//
 	// Duplicate a test case 20 times.
 	//   DuplicateTest(

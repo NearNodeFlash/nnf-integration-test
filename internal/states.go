@@ -52,10 +52,12 @@ func (t *T) Execute(ctx context.Context, k8sClient client.Client) {
 		fnName = fnName[strings.Index(fnName, "(*T).")+5 : len(fnName)-3] // Extract the function name
 		state := dwsv1alpha7.WorkflowState(strings.Title(fnName))
 
-		// Handle DelayInState
-		if t.options.delayInState != nil && state == t.options.delayInState.state {
-			By(fmt.Sprintf("Delaying in state %s for %v", state, t.options.delayInState.duration))
-			time.Sleep(t.options.delayInState.duration)
+		// Handle DelayInState - check all delays for this state
+		for _, delay := range t.options.delayInState {
+			if state == delay.state {
+				By(fmt.Sprintf("Delaying in state %s for %v", state, delay.duration))
+				time.Sleep(delay.duration)
+			}
 		}
 
 		// Handle StopAfter
