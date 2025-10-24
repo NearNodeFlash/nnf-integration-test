@@ -46,6 +46,7 @@ import (
 // execution. Nil values represent no configuration of that type.
 type TOptions struct {
 	stopAfter           *TStopAfter
+	delayInState        []TDelayInState
 	expectError         *TExpectError
 	storageProfile      *TStorageProfile
 	containerProfile    *TContainerProfile
@@ -73,6 +74,18 @@ type TStopAfter struct {
 // Stop after lets you stop a test after a given state is reached
 func (t *T) StopAfter(state dwsv1alpha7.WorkflowState) *T {
 	t.options.stopAfter = &TStopAfter{state: state}
+	return t
+}
+
+type TDelayInState struct {
+	state    dwsv1alpha7.WorkflowState
+	duration time.Duration
+}
+
+// DelayInState allows you to pause in a specific state for a given duration.
+// Multiple delays can be added by calling this method multiple times.
+func (t *T) DelayInState(state dwsv1alpha7.WorkflowState, duration time.Duration) *T {
+	t.options.delayInState = append(t.options.delayInState, TDelayInState{state: state, duration: duration})
 	return t
 }
 
