@@ -59,6 +59,11 @@ dm:
 container:
 	${GINKGO_RUN} --label-filter='container' .
 
+# Run gfs2 fence test
+.PHONY: gfs2_fence
+gfs2_fence:
+	${GINKGO_RUN} --label-filter='gfs2_fence' .
+
 .PHONY: .version
 .version: ## Uses the git-version-gen script to generate a tag version
 	./git-version-gen --fallback `git rev-parse HEAD` > .version
