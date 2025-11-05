@@ -153,6 +153,7 @@ func (t *T) Workflow() *dwsv1alpha7.Workflow {
 const (
 	Simple         = "simple"
 	ExternalLustre = "external_lustre"
+	GFS2Fence      = "gfs2_fence"
 )
 
 func (t *T) WithLabels(labels ...string) *T { t.labels = append(t.labels, labels...); return t }

@@ -21,6 +21,7 @@ package test
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/NearNodeFlash/nnf-integration-test/internal"
 
@@ -77,6 +78,12 @@ var tests = []*T{
 	// External Computes
 	MakeTest("Lustre External", "#DW jobdw type=lustre name=lustre capacity=50GB").WithExternalComputes().WithLabels(ExternalLustre),
 
+	// GFS2 Fence
+	MakeTest("GFS2 Fence", "#DW jobdw type=gfs2 name=gfs2-fence capacity=50GB").WithLabels(GFS2Fence).
+		DelayInState(dwsv1alpha7.StateDataIn, 15*time.Second).  // start pacemaker
+		DelayInState(dwsv1alpha7.StatePreRun, 60*time.Second).  // fence node(s)
+		DelayInState(dwsv1alpha7.StateDataOut, 15*time.Second), // stop pacemaker on surviving node(s)
+
 	// Storage Profiles
 	MakeTest("XFS with Storage Profile",
 		"#DW jobdw type=xfs name=xfs-storage-profile capacity=50GB profile=my-xfs-storage-profile").
@@ -84,6 +91,8 @@ var tests = []*T{
 	MakeTest("GFS2 with Storage Profile",
 		"#DW jobdw type=gfs2 name=gfs2-storage-profile capacity=50GB profile=my-gfs2-storage-profile").
 		WithStorageProfile(),
+	// WithStorageProfile().DelayInState(dwsv1alpha7.StateDataIn, 15*time.Second).DelayInState(dwsv1alpha7.StateDataOut, 15*time.Second).Focused(),    // Useful for debugging
+	// WithStorageProfile().DelayInState(dwsv1alpha7.StateDataIn, 15*time.Second).StopAfter(dwsv1alpha7.StatePreRun).Focused(),
 	MakeTest("XFS with Storage Profile and LV Create",
 		"#DW jobdw type=xfs name=xfs-storage-profile capacity=14TB profile=my-xfs-storage-profile").
 		WithStorageProfileLvCreate("--zero n --activate y --type raid5 --nosync --extents $PERCENT_VG --stripes $DEVICE_NUM-1 --stripesize=64KiB --name $LV_NAME $VG_NAME"),

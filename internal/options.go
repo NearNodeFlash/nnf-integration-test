@@ -401,7 +401,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 				profile.Data.RetryLimit = int32(*opt.RetryLimit)
 			}
 			if opt.NoStorage {
-				for i, _ := range profile.Data.Storages {
+				for i := range profile.Data.Storages {
 					storage := &profile.Data.Storages[i]
 					storage.Optional = true
 				}
