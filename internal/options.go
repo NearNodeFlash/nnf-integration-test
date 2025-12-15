@@ -362,7 +362,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		if o.storageProfile.lvCreateCmd != "" {
-			profile.Data.XFSStorage.CmdLines.LvCreate = o.storageProfile.lvCreateCmd
+			profile.Data.XFSStorage.BlockDeviceCommands.RabbitCommands.LvCreate = o.storageProfile.lvCreateCmd
 		}
 
 		Expect(k8sClient.Create(ctx, profile)).To(Succeed())
