@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@ import (
 
 	dwsv1alpha7 "github.com/DataWorkflowServices/dws/api/v1alpha7"
 	lusv1alpha1 "github.com/NearNodeFlash/lustre-fs-operator/api/v1alpha1"
-	nnfv1alpha9 "github.com/NearNodeFlash/nnf-sos/api/v1alpha9"
+	nnfv1alpha10 "github.com/NearNodeFlash/nnf-sos/api/v1alpha10"
 
 	"github.com/DataWorkflowServices/dws/utils/dwdparse"
 )
@@ -333,7 +333,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
 
 		// Clone the default profile.
-		defaultProf := &nnfv1alpha9.NnfStorageProfile{
+		defaultProf := &nnfv1alpha10.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "default",
 				Namespace: "nnf-system",
@@ -342,7 +342,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(defaultProf), defaultProf)).To(Succeed())
 
-		profile := &nnfv1alpha9.NnfStorageProfile{
+		profile := &nnfv1alpha10.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.storageProfile.name,
 				Namespace: "nnf-system",
@@ -370,7 +370,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 	if o.containerProfile != nil {
 		// Clone the provided base profile
-		baseProfile := &nnfv1alpha9.NnfContainerProfile{
+		baseProfile := &nnfv1alpha10.NnfContainerProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.containerProfile.base,
 				Namespace: "nnf-system",
@@ -379,7 +379,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(baseProfile), baseProfile)).To(Succeed())
 
-		profile := &nnfv1alpha9.NnfContainerProfile{
+		profile := &nnfv1alpha10.NnfContainerProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.containerProfile.name,
 				Namespace: "nnf-system",
@@ -433,7 +433,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 
 		// Extract the File System Name and MGSNids from the persistent lustre instance. This
 		// assumes an NNF Storage resource is created in the same name as the persistent instance
-		storage := &nnfv1alpha9.NnfStorage{
+		storage := &nnfv1alpha10.NnfStorage{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: corev1.NamespaceDefault,
@@ -570,7 +570,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	if t.options.storageProfile != nil {
 		By(fmt.Sprintf("Deleting storage profile '%s'", o.storageProfile.name))
 
-		profile := &nnfv1alpha9.NnfStorageProfile{
+		profile := &nnfv1alpha10.NnfStorageProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.storageProfile.name,
 				Namespace: "nnf-system",
@@ -584,7 +584,7 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 	if t.options.containerProfile != nil {
 		By(fmt.Sprintf("Deleting container profile '%s'", o.containerProfile.name))
 
-		profile := &nnfv1alpha9.NnfContainerProfile{
+		profile := &nnfv1alpha10.NnfContainerProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.containerProfile.name,
 				Namespace: "nnf-system",
