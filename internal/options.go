@@ -353,12 +353,12 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		profile.Data.Default = false
 		if o.storageProfile.externalMgs != "" {
 			profile.Data.LustreStorage.CombinedMGTMDT = false
-			profile.Data.LustreStorage.ExternalMGS = o.storageProfile.externalMgs
-			profile.Data.LustreStorage.StandaloneMGTPoolName = ""
+			profile.Data.LustreStorage.MgtOptions.ExternalMGS = o.storageProfile.externalMgs
+			profile.Data.LustreStorage.MgtOptions.StandaloneMGTPoolName = ""
 		} else if o.storageProfile.standaloneMgt != "" {
 			profile.Data.LustreStorage.CombinedMGTMDT = false
-			profile.Data.LustreStorage.ExternalMGS = ""
-			profile.Data.LustreStorage.StandaloneMGTPoolName = o.storageProfile.standaloneMgt
+			profile.Data.LustreStorage.MgtOptions.ExternalMGS = ""
+			profile.Data.LustreStorage.MgtOptions.StandaloneMGTPoolName = o.storageProfile.standaloneMgt
 		}
 
 		if o.storageProfile.lvCreateCmd != "" {
