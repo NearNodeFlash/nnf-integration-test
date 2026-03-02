@@ -109,10 +109,11 @@ func (t *T) ShouldTeardown() bool {
 }
 
 type TStorageProfile struct {
-	name          string
-	externalMgs   string
-	standaloneMgt string
-	lvCreateCmd   string
+	name                            string
+	externalMgs                     string
+	standaloneMgt                   string
+	lvCreateCmd                     string
+	externalMgsFromPersistentLustre bool
 }
 
 // WithStorageProfile will manage a storage profile of name 'name'
@@ -142,6 +143,16 @@ func (t *T) WithStorageProfileStandaloneMGT(standaloneMGT string) *T {
 func (t *T) WithStorageProfileExternalMGS(externalMGS string) *T {
 	t.WithStorageProfile()
 	t.options.storageProfile.externalMgs = externalMGS
+
+	return t.WithLabels("externalMGS")
+}
+
+// WithStorageProfileExternalMGSFromPersistentLustre configures the storage profile to use
+// the NID from the test's persistent lustre instance as the external MGS. The profile is
+// created after the persistent lustre is provisioned so the NID is available.
+func (t *T) WithStorageProfileExternalMGSFromPersistentLustre() *T {
+	t.WithStorageProfile()
+	t.options.storageProfile.externalMgsFromPersistentLustre = true
 
 	return t.WithLabels("externalMGS")
 }
@@ -329,7 +340,7 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		}
 	}
 
-	if o.storageProfile != nil {
+	if o.storageProfile != nil && !o.storageProfile.externalMgsFromPersistentLustre {
 		By(fmt.Sprintf("Creating storage profile '%s'", o.storageProfile.name))
 
 		// Clone the default profile.
@@ -441,13 +452,46 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		}
 
 		By(fmt.Sprintf("Retrieving Storage Resource %s", client.ObjectKeyFromObject(storage)))
+		storageReadyTimeout := time.Minute
+		if ht, ok := ctx.Value("highTimeout").(time.Duration); ok {
+			storageReadyTimeout = ht
+		}
 		Eventually(func(g Gomega) bool {
 			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(storage), storage)).To(Succeed())
 			return storage.Status.Ready
-		}).WithTimeout(time.Minute).WithPolling(time.Second).Should(BeTrue())
+		}).WithTimeout(storageReadyTimeout).WithPolling(time.Second).Should(BeTrue())
 
 		o.persistentLustre.fsName = storage.Status.FileSystemName
 		o.persistentLustre.mgsNids = storage.Status.MgsAddress
+
+		// If a storage profile needs the persistent lustre's NID as its external MGS,
+		// create it now that the NID is known.
+		if o.storageProfile != nil && o.storageProfile.externalMgsFromPersistentLustre {
+			o.storageProfile.externalMgs = o.persistentLustre.mgsNids
+
+			By(fmt.Sprintf("Creating storage profile '%s' with externalMgs '%s'", o.storageProfile.name, o.storageProfile.externalMgs))
+
+			defaultProf := &nnfv1alpha11.NnfStorageProfile{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "default",
+					Namespace: "nnf-system",
+				},
+			}
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(defaultProf), defaultProf)).To(Succeed())
+
+			profile := &nnfv1alpha11.NnfStorageProfile{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      o.storageProfile.name,
+					Namespace: "nnf-system",
+				},
+			}
+			defaultProf.Data.DeepCopyInto(&profile.Data)
+			profile.Data.Default = false
+			profile.Data.LustreStorage.CombinedMGTMDT = false
+			profile.Data.LustreStorage.MgtOptions.ExternalMGS = o.storageProfile.externalMgs
+			profile.Data.LustreStorage.MgtOptions.StandaloneMGTPoolName = ""
+			Expect(k8sClient.Create(ctx, profile)).To(Succeed())
+		}
 	}
 
 	if o.mgsPool != nil {
@@ -559,6 +603,17 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		// Destroy the persistent lustre instance we previously created
 		Expect(k8sClient.Create(ctx, o.persistentLustre.destroy.Workflow())).To(Succeed())
 		o.persistentLustre.destroy.Execute(ctx, k8sClient)
+
+		// Wait for the NnfStorage to be fully deleted before continuing. The NnfLustreMGT is
+		// cleaned up as part of NnfStorage deletion, so the next test's create_persistent won't
+		// encounter a "multiple MGTs found" conflict if we ensure the storage is gone first.
+		By(fmt.Sprintf("Waiting for NnfStorage '%s' to be deleted", o.persistentLustre.name))
+		WaitForDeletion(ctx, k8sClient, &nnfv1alpha11.NnfStorage{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      o.persistentLustre.name,
+				Namespace: corev1.NamespaceDefault,
+			},
+		})
 
 		Expect(k8sClient.Delete(ctx, o.persistentLustre.create.Workflow())).To(Succeed())
 		WaitForDeletion(ctx, k8sClient, o.persistentLustre.create.Workflow())

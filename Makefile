@@ -52,7 +52,7 @@ simple:
 # Run Data Movement Tests (i.e. copy_in/copy_out). This does not test copy offload API.
 .PHONY: dm
 dm:
-	${GINKGO_RUN} --label-filter='dm' .
+	${GINKGO_RUN} --fail-fast --label-filter='dm' .
 
 # Run container tests
 .PHONY: container
