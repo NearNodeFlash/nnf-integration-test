@@ -57,7 +57,7 @@ dm:
 # Run container tests
 .PHONY: container
 container:
-	${GINKGO_RUN} --label-filter='container' .
+	${GINKGO_RUN} --fail-fast --label-filter='container' .
 
 # Run gfs2 fence test
 .PHONY: gfs2_fence
