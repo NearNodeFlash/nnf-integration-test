@@ -199,6 +199,14 @@ func (t *T) preRun(ctx context.Context, k8sClient client.Client, workflow *dwsv1
 
 func (t *T) postRun(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha7.Workflow) {
 	t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha7.StatePostRun)
+
+	// After successful PostRun, verify MPI container pod logs for SSH errors.
+	// Only MPI workflows use SSH between launcher and workers. Skip for tests
+	// that expect errors since those containers are designed to fail.
+	Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(workflow), workflow)).To(Succeed())
+	if _, isMPI := workflow.Status.Env["NNF_CONTAINER_LAUNCHER"]; isMPI && t.options.expectError == nil {
+		VerifyContainerPodLogs(ctx, k8sClient, workflow)
+	}
 }
 
 func (t *T) dataOut(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha7.Workflow) {

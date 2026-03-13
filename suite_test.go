@@ -137,6 +137,11 @@ var _ = BeforeSuite(func() {
 		}
 	}
 
+	// Verify the test user exists on the system. MPI container tests require a real
+	// system user so that SSH key setup exercises the correct code paths.
+	// See NearNodeFlash/NearNodeFlash.github.io#310.
+	By(fmt.Sprintf("Verifying test user UID=%d GID=%d exists on the system", TestUserID, TestGroupID))
+	VerifyUserOnRabbit(ctx, k8sClient, TestUserID)
 })
 
 var _ = AfterSuite(func() {
