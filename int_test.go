@@ -46,6 +46,13 @@ var (
 		dwsv1alpha7.StateSetup,
 		dwsv1alpha7.StateTeardown,
 	}
+
+	// User/Group IDs for tests that require permissions. These reference the
+	// configurable values in internal/utils.go which can be overridden via
+	// NNF_USER_ID and NNF_GROUP_ID environment variables. They must correspond
+	// to a real user on the system's Rabbit/compute nodes.
+	userID  = TestUserID
+	groupID = TestGroupID
 )
 
 var tests = []*T{
@@ -110,7 +117,7 @@ var tests = []*T{
 		"#DW copy_out source=$DW_JOB_xfs-data-movement/test.in destination=/lus/zenith/testuser/test.out").
 		WithPersistentLustre("xfs-data-movement-lustre-instance").
 		WithGlobalLustreFromPersistentLustre("zenith", []string{"default"}).
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithLabels("dm").
 		HardwareRequired(),
 	MakeTest("GFS2 with Data Movement",
@@ -119,7 +126,7 @@ var tests = []*T{
 		"#DW copy_out profile=no-xattr source=$DW_JOB_gfs2-data-movement/test.in destination=/lus/kelso/testuser/test.out").
 		WithPersistentLustre("gfs2-data-movement-lustre-instance").
 		WithGlobalLustreFromPersistentLustre("kelso", []string{"default"}).
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithLabels("dm").
 		HardwareRequired(),
 	MakeTest("Lustre with Data Movement",
@@ -129,7 +136,7 @@ var tests = []*T{
 		WithPersistentLustre("lustre-data-movement-lustre-instance").
 		WithGlobalLustreFromPersistentLustre("flame", []string{"default"}).
 		WithStorageProfileExternalMGSFromPersistentLustre().
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithLabels("dm").
 		HardwareRequired(),
 
@@ -138,18 +145,18 @@ var tests = []*T{
 		"#DW jobdw type=gfs2 name=gfs2-with-containers-mpi capacity=100GB",
 		"#DW container name=gfs2-with-containers-mpi profile=example-mpi "+
 			"DW_JOB_foo_local_storage=gfs2-with-containers-mpi").
-		WithPermissions(1050, 1051).WithLabels("mpi"),
+		WithPermissions(userID, groupID).WithLabels("mpi"),
 	MakeTest("Lustre with MPI Containers",
 		"#DW jobdw type=lustre name=lustre-with-containers-mpi capacity=100GB",
 		"#DW container name=lustre-with-containers-mpi profile=example-mpi "+
 			"DW_JOB_foo_local_storage=lustre-with-containers-mpi").
-		WithPermissions(1050, 1051).WithLabels("mpi"),
+		WithPermissions(userID, groupID).WithLabels("mpi"),
 	MakeTest("GFS2 and Global Lustre with MPI Containers",
 		"#DW jobdw type=gfs2 name=gfs2-and-global-with-containers-mpi capacity=100GB",
 		"#DW container name=gfs2-and-global-with-containers-mpi profile=example-mpi "+
 			"DW_JOB_foo_local_storage=gfs2-and-global-with-containers-mpi "+
 			"DW_GLOBAL_foo_global_lustre=/lus/polly").
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithPersistentLustre("gfs2-and-global-with-containers-polly").
 		WithGlobalLustreFromPersistentLustre("polly", []string{"default"}).
 		WithLabels("mpi", "global-lustre"),
@@ -157,17 +164,17 @@ var tests = []*T{
 	// Containers - MPI failures
 	MakeTest("PreRun timeout on MPI containers",
 		"#DW container name=prerun-timeout-mpi profile=example-mpi-prerun-timeout").
-		WithPermissions(1050, 1051).WithLabels("mpi", "timeout").
+		WithPermissions(userID, groupID).WithLabels("mpi", "timeout").
 		WithContainerProfile("example-mpi", &ContainerProfileOptions{PrerunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
 		ExpectError(dwsv1alpha7.StatePreRun),
 	MakeTest("PostRun timeout on MPI containers",
 		"#DW container name=postrun-timeout-mpi profile=example-mpi-postrun-timeout").
-		WithPermissions(1050, 1051).WithLabels("mpi", "timeout").
+		WithPermissions(userID, groupID).WithLabels("mpi", "timeout").
 		WithContainerProfile("example-mpi-webserver", &ContainerProfileOptions{PostrunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
 		ExpectError(dwsv1alpha7.StatePostRun),
 	MakeTest("Non-zero exit on MPI containers",
 		"#DW container name=mpi-container-fail profile=example-mpi-fail-noretry").
-		WithPermissions(1050, 1051).WithLabels("mpi", "fail").
+		WithPermissions(userID, groupID).WithLabels("mpi", "fail").
 		WithContainerProfile("example-mpi-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
 		ExpectError(dwsv1alpha7.StatePostRun),
 
@@ -175,13 +182,13 @@ var tests = []*T{
 	MakeTest("GFS2 with Containers",
 		"#DW jobdw type=gfs2 name=gfs2-with-containers capacity=100GB",
 		"#DW container name=gfs2-with-containers profile=example-success DW_JOB_foo_local_storage=gfs2-with-containers").
-		WithPermissions(1050, 1051).WithLabels("non-mpi"),
+		WithPermissions(userID, groupID).WithLabels("non-mpi"),
 	MakeTest("GFS2 and Global Lustre with Containers",
 		"#DW jobdw type=gfs2 name=gfs2-and-global-with-containers capacity=100GB",
 		"#DW container name=gfs2-and-global-with-containers profile=example-success "+
 			"DW_JOB_foo_local_storage=gfs2-and-global-with-containers "+
 			"DW_GLOBAL_foo_global_lustre=/lus/cherokee").
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithPersistentLustre("gfs2-and-global-with-containers-cherokee").
 		WithGlobalLustreFromPersistentLustre("cherokee", []string{"default"}).
 		WithLabels("non-mpi", "global-lustre"),
@@ -189,17 +196,17 @@ var tests = []*T{
 	// Containers - Non-MPI failures
 	MakeTest("PreRun timeout on non-MPI containers",
 		"#DW container name=prerun-timeout profile=example-prerun-timeout").
-		WithPermissions(1050, 1051).WithLabels("non-mpi", "timeout").
+		WithPermissions(userID, groupID).WithLabels("non-mpi", "timeout").
 		WithContainerProfile("example-forever", &ContainerProfileOptions{PrerunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
 		ExpectError(dwsv1alpha7.StatePreRun),
 	MakeTest("PostRun timeout on non-MPI containers",
 		"#DW container name=postrun-timeout profile=example-postrun-timeout").
-		WithPermissions(1050, 1051).WithLabels("non-mpi", "timeout").
+		WithPermissions(userID, groupID).WithLabels("non-mpi", "timeout").
 		WithContainerProfile("example-forever", &ContainerProfileOptions{PostrunTimeoutSeconds: pointy.Int(1), NoStorage: true}).
 		ExpectError(dwsv1alpha7.StatePostRun),
 	MakeTest("Non-zero exit on non-MPI containers",
 		"#DW container name=container-fail profile=example-fail-noretry").
-		WithPermissions(1050, 1051).WithLabels("non-mpi", "fail").
+		WithPermissions(userID, groupID).WithLabels("non-mpi", "fail").
 		WithContainerProfile("example-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
 		ExpectError(dwsv1alpha7.StatePostRun),
 
@@ -219,14 +226,14 @@ var tests = []*T{
 		"#DW persistentdw name=containers-persistent-storage",
 		"#DW container name=gfs2-lustre-with-containers profile=example-success DW_JOB_foo_local_storage=containers-local-storage DW_PERSISTENT_foo_persistent_storage=containers-persistent-storage").
 		WithPersistentLustre("containers-persistent-storage").
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithLabels("multi-storage"),
 	MakeTest("GFS2 and Lustre with Containers MPI",
 		"#DW jobdw name=containers-local-storage-mpi type=gfs2 capacity=100GB",
 		"#DW persistentdw name=containers-persistent-storage-mpi",
 		"#DW container name=gfs2-lustre-with-containers-mpi profile=example-mpi DW_JOB_foo_local_storage=containers-local-storage-mpi DW_PERSISTENT_foo_persistent_storage=containers-persistent-storage-mpi").
 		WithPersistentLustre("containers-persistent-storage-mpi").
-		WithPermissions(1050, 1051).
+		WithPermissions(userID, groupID).
 		WithLabels("multi-storage"),
 
 	// External MGS
@@ -279,6 +286,12 @@ var _ = Describe("NNF Integration Test", func() {
 				if report.Failed() {
 					workflow := t.Workflow()
 					AddReportEntry(fmt.Sprintf("Workflow '%s' Failed", workflow.Name), workflow.Status)
+
+					// Include container pod logs for container tests to aid diagnosis
+					if t.HasContainerDirective() {
+						AddReportEntry(fmt.Sprintf("Container Pod Logs for '%s'", workflow.Name),
+							ReportContainerPodLogs(ctx, k8sClient, workflow))
+					}
 				}
 			})
 
