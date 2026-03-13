@@ -1,12 +1,12 @@
 module github.com/NearNodeFlash/nnf-integration-test
 
-go 1.23.9
+go 1.25.7
 
 require (
-	github.com/DataWorkflowServices/dws v0.0.1-0.20260217162004-9c3e31c5c6c6
-	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20260217204444-10b3c2fa90bf
-	github.com/NearNodeFlash/nnf-ec v0.0.1-0.20251021182141-d22098d70c26 // indirect
-	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20260220193431-be51e73232f8
+	github.com/DataWorkflowServices/dws v0.0.1-0.20260309165511-cf9255cfc6a7
+	github.com/NearNodeFlash/lustre-fs-operator v0.0.1-0.20260309172025-4b4ec57b9127
+	github.com/NearNodeFlash/nnf-ec v0.0.1-0.20260310162051-7797cd568379 // indirect
+	github.com/NearNodeFlash/nnf-sos v0.0.1-0.20260312170612-fb412e3dde6f
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	go.openly.dev/pointy v1.3.0
@@ -54,16 +54,15 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/oauth2 v0.35.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.28.0 // indirect
+	golang.org/x/tools v0.41.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/appengine v1.6.8-0.20221117013220-504804fb50de // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
