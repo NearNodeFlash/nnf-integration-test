@@ -161,6 +161,13 @@ var tests = []*T{
 		WithGlobalLustreFromPersistentLustre("polly", []string{"default"}).
 		WithLabels("mpi", "global-lustre"),
 
+	// Containers - Copy Offload API
+	MakeTest("GFS2 with Copy Offload",
+		"#DW jobdw type=gfs2 name=project1 capacity=50GB requires=copy-offload",
+		"#DW container name=copyoff-container profile=copy-offload-kind DW_JOB_my_storage=project1").
+		WithPermissions(userID, groupID).WithLabels("mpi", "copy-offload").
+		WithContainerProfile("copy-offload-default", &ContainerProfileOptions{NoStorage: true}),
+
 	// Containers - MPI failures
 	MakeTest("PreRun timeout on MPI containers",
 		"#DW container name=prerun-timeout-mpi profile=example-mpi-prerun-timeout").
