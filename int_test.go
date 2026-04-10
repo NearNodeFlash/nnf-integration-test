@@ -102,7 +102,8 @@ var tests = []*T{
 	// WithStorageProfile().DelayInState(dwsv1alpha7.StateDataIn, 15*time.Second).StopAfter(dwsv1alpha7.StatePreRun).Focused(),
 	MakeTest("XFS with Storage Profile and LV Create",
 		"#DW jobdw type=xfs name=xfs-storage-profile capacity=14TB profile=my-xfs-storage-profile").
-		WithStorageProfileLvCreate("--zero n --activate y --type raid5 --nosync --extents $PERCENT_VG --stripes $DEVICE_NUM-1 --stripesize=64KiB --name $LV_NAME $VG_NAME"),
+		WithStorageProfileLvCreate("--zero n --activate y --type raid5 --nosync --extents $PERCENT_VG --stripes $DEVICE_NUM-1 --stripesize=64KiB --name $LV_NAME $VG_NAME").
+		WithLabels("high-capacity"),
 
 	// Persistent
 	MakeTest("Persistent Lustre",
@@ -150,7 +151,7 @@ var tests = []*T{
 		"#DW jobdw type=lustre name=lustre-with-containers-mpi capacity=100GB",
 		"#DW container name=lustre-with-containers-mpi profile=example-mpi "+
 			"DW_JOB_foo_local_storage=lustre-with-containers-mpi").
-		WithPermissions(userID, groupID).WithLabels("mpi"),
+		WithPermissions(userID, groupID).WithLabels("mpi", "lustre-csimount"),
 	MakeTest("GFS2 and Global Lustre with MPI Containers",
 		"#DW jobdw type=gfs2 name=gfs2-and-global-with-containers-mpi capacity=100GB",
 		"#DW container name=gfs2-and-global-with-containers-mpi profile=example-mpi "+
@@ -217,7 +218,7 @@ var tests = []*T{
 		WithContainerProfile("example-fail", &ContainerProfileOptions{RetryLimit: pointy.Int(0)}).
 		ExpectError(dwsv1alpha7.StatePostRun),
 
-	// Containers - Unsupported Filesystems. These should fail as xfs/raw filesystems are not supported for containers.
+	// Containers - Unsupported Filesystems. XFS is not supported for containers.
 	MakeTest("XFS with Containers",
 		"#DW jobdw type=xfs name=xfs-with-containers capacity=100GB",
 		"#DW container name=xfs-with-containers profile=example-success DW_JOB_foo_local_storage=xfs-with-containers").
@@ -225,7 +226,7 @@ var tests = []*T{
 	MakeTest("Raw with Containers",
 		"#DW jobdw type=raw name=raw-with-containers capacity=100GB",
 		"#DW container name=raw-with-containers profile=example-success DW_JOB_foo_local_storage=raw-with-containers").
-		ExpectError(dwsv1alpha7.StateProposal).WithLabels("unsupported-fs"),
+		WithPermissions(userID, groupID).WithLabels("non-mpi"),
 
 	// Containers - Multiple Storages
 	MakeTest("GFS2 and Lustre with Containers",
