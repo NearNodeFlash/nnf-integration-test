@@ -9,7 +9,7 @@ endif
 export PATH := $(HOME)/go/bin:$(PATH)
 
 # Base command to start the tests with ginkgo
-GINKGO_RUN?=CGO_ENABLED=0 ginkgo run ${PARALLEL_OPT} --v
+GINKGO_RUN?=CGO_ENABLED=0 ginkgo run ${PARALLEL_OPT} --v --fail-fast
 
 all: fmt vet
 
@@ -22,9 +22,19 @@ vet:
 	go vet ./...
 
 # TODO: would be nice to tie this to a script that also deletes all the workflows and makes sure nothing is left over
+# Clean up resources that may be left behind by interrupted test runs
 .PHONY: clean
 clean:
+	@echo "Removing triage namespace..."
 	kubectl delete namespace nnf-system-needs-triage --ignore-not-found
+	@echo "Removing leftover UID verification pods..."
+	kubectl delete pods -n default --ignore-not-found $$(kubectl get pods -n default --no-headers -o custom-columns=':metadata.name' 2>/dev/null | grep '^verify-uid-') 2>/dev/null; true
+	@echo "Checking for persistent storage instances..."
+	@psi=$$(kubectl get persistentstorageinstances -A --no-headers 2>/dev/null); \
+	if [ -n "$$psi" ]; then \
+		echo "WARNING: Persistent storage instances still exist. These require a destroy_persistent workflow to remove:" >&2; \
+		echo "$$psi" >&2; \
+	fi
 
 .PHONY: init
 init:
@@ -33,11 +43,21 @@ init:
 # Run all the tests
 .PHONY: test
 test:
-	${GINKGO_RUN} .
+	@if kubectl config current-context 2>/dev/null | grep -q 'kind-'; then \
+		echo "Detected kind cluster. Switching to 'make kind' (excludes global-lustre tests)." >&2; \
+		$(MAKE) kind; \
+	else \
+		${GINKGO_RUN} . ; \
+	fi
 
 # Alias for all the tests
 .PHONY: full
 full: test
+
+# Run tests compatible with a kind environment (excludes tests requiring real Lustre mounts)
+.PHONY: kind
+kind:
+	${GINKGO_RUN} --label-filter='!global-lustre && !multi-storage && !lustre-csimount && !high-capacity' .
 
 # Run one test to ensure system is in working order
 .PHONY: sanity
