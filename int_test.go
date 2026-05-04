@@ -87,6 +87,7 @@ var tests = []*T{
 
 	// GFS2 Fence
 	MakeTest("GFS2 Fence", "#DW jobdw type=gfs2 name=gfs2-fence capacity=50GB").WithLabels(GFS2Fence).
+		RequiresHardware().
 		DelayInState(dwsv1alpha7.StateDataIn, 15*time.Second).  // start pacemaker
 		DelayInState(dwsv1alpha7.StatePreRun, 60*time.Second).  // fence node(s)
 		DelayInState(dwsv1alpha7.StateDataOut, 15*time.Second), // stop pacemaker on surviving node(s)
