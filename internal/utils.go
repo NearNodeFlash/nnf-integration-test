@@ -254,11 +254,12 @@ func runHelperPod(ctx context.Context, k8sClient client.Client, t *T, name, comm
 	Expect(k8sClient.Create(ctx, pod)).To(Succeed())
 	t.helperPods = append(t.helperPods, pod)
 
-	// Wait for successful completion
+	// Wait for successful completion. Use a generous timeout to account for
+	// image pulls which can take several minutes on a cold cache.
 	Eventually(func(g Gomega) bool {
 		g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(pod), pod)).To(Succeed())
 		return pod.Status.Phase == corev1.PodSucceeded
-	}).WithTimeout(time.Minute).WithPolling(time.Second).Should(BeTrue())
+	}).WithTimeout(5 * time.Minute).WithPolling(time.Second).Should(BeTrue())
 }
 
 // HasContainerDirective returns true if this test includes a #DW container directive.

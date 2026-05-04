@@ -89,6 +89,12 @@ func (t *T) DelayInState(state dwsv1alpha7.WorkflowState, duration time.Duration
 	return t
 }
 
+// RequiresHardware marks a test as requiring real hardware (skipped in kind environments).
+func (t *T) RequiresHardware() *T {
+	t.options.hardwareRequired = true
+	return t
+}
+
 type TExpectError struct {
 	state dwsv1alpha7.WorkflowState
 }
@@ -294,11 +300,12 @@ func (t *T) WithGlobalLustreFromPersistentLustre(name string, namespaces []strin
 			fsType = args["type"]
 		}
 
-		if args["command"] == "copy_in" {
+		switch args["command"] {
+		case "copy_in":
 			if path, found := args["source"]; found {
 				t.options.globalLustre.in = path
 			}
-		} else if args["command"] == "copy_out" {
+		case "copy_out":
 			if path, found := args["destination"]; found {
 				// Account for index mount directories in the path. This only works for file-file
 				// data movement to assume where the '*' goes for the index mount directories.
@@ -433,9 +440,11 @@ func (t *T) Prepare(ctx context.Context, k8sClient client.Client) error {
 		capacity := o.persistentLustre.capacity
 
 		o.persistentLustre.create = MakeTest(name+"-create",
-			fmt.Sprintf("#DW create_persistent type=lustre name=%s capacity=%s", name, capacity))
+			fmt.Sprintf("#DW create_persistent type=lustre name=%s capacity=%s", name, capacity)).
+			WithPermissions(t.workflow.Spec.UserID, t.workflow.Spec.GroupID)
 		o.persistentLustre.destroy = MakeTest(name+"-destroy",
-			fmt.Sprintf("#DW destroy_persistent name=%s", name))
+			fmt.Sprintf("#DW destroy_persistent name=%s", name)).
+			WithPermissions(t.workflow.Spec.UserID, t.workflow.Spec.GroupID)
 
 		// Create the persistent lustre instance
 		By(fmt.Sprintf("Creating persistent lustre instance '%s'", name))
@@ -590,7 +599,8 @@ func (t *T) Cleanup(ctx context.Context, k8sClient client.Client) error {
 		name := o.cleanupPersistent.name
 		By(fmt.Sprintf("Destroying persistent filesystem '%s'", name))
 
-		test := MakeTest(name+"-destroy", fmt.Sprintf("#DW destroy_persistent name=%s", name))
+		test := MakeTest(name+"-destroy", fmt.Sprintf("#DW destroy_persistent name=%s", name)).
+			WithPermissions(t.workflow.Spec.UserID, t.workflow.Spec.GroupID)
 		Expect(k8sClient.Create(ctx, test.Workflow())).To(Succeed())
 		test.Execute(ctx, k8sClient)
 		Expect(k8sClient.Delete(ctx, test.Workflow())).To(Succeed())
