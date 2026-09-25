@@ -420,3 +420,27 @@ func WaitForDeletion(ctx context.Context, k8sClient client.Client, obj client.Ob
 		return k8sClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
 	}, "120s").Should(HaveOccurred(), fmt.Sprintf("object '%s' was not deleted", obj.GetName()))
 }
+
+// VerifyClientMountPermissions checks that every ClientMount created for the workflow
+// carries the job submitter's UID/GID. The ClientMount reconciler turns these into the
+// $USERID and $GROUPID command variables, so a zero here silently runs a site's
+// userCommands as root.
+func VerifyClientMountPermissions(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha7.Workflow) {
+	if workflow.Spec.UserID == 0 && workflow.Spec.GroupID == 0 {
+		return
+	}
+
+	By(fmt.Sprintf("Verifying ClientMounts carry UID=%d GID=%d", workflow.Spec.UserID, workflow.Spec.GroupID))
+
+	clientMounts := &dwsv1alpha7.ClientMountList{}
+	Expect(k8sClient.List(ctx, clientMounts, dwsv1alpha7.MatchingWorkflow(workflow))).To(Succeed())
+	Expect(clientMounts.Items).ToNot(BeEmpty(), "no ClientMounts found for the workflow")
+
+	for _, clientMount := range clientMounts.Items {
+		for index, mount := range clientMount.Spec.Mounts {
+			where := fmt.Sprintf("%s/%s mount %d (%s)", clientMount.Namespace, clientMount.Name, index, mount.Type)
+			Expect(mount.UserID).To(Equal(workflow.Spec.UserID), where)
+			Expect(mount.GroupID).To(Equal(workflow.Spec.GroupID), where)
+		}
+	}
+}
