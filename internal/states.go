@@ -195,6 +195,8 @@ func (t *T) dataIn(ctx context.Context, k8sClient client.Client, workflow *dwsv1
 
 func (t *T) preRun(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha7.Workflow) {
 	t.AdvanceStateAndWaitForReady(ctx, k8sClient, workflow, dwsv1alpha7.StatePreRun)
+
+	VerifyClientMountPermissions(ctx, k8sClient, workflow)
 }
 
 func (t *T) postRun(ctx context.Context, k8sClient client.Client, workflow *dwsv1alpha7.Workflow) {

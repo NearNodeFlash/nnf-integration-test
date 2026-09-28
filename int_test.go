@@ -77,10 +77,10 @@ var tests = []*T{
 	//      20,
 	//   ),
 
-	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").WithLabels(Simple),
-	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithLabels(Simple),
-	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithLabels(Simple),
-	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithLabels(Simple),
+	MakeTest("XFS", "#DW jobdw type=xfs name=xfs capacity=50GB").WithPermissions(userID, groupID).WithLabels(Simple),
+	MakeTest("GFS2", "#DW jobdw type=gfs2 name=gfs2 capacity=50GB").WithPermissions(userID, groupID).WithLabels(Simple),
+	MakeTest("Lustre", "#DW jobdw type=lustre name=lustre capacity=50GB").WithPermissions(userID, groupID).WithLabels(Simple),
+	MakeTest("Raw", "#DW jobdw type=raw name=raw capacity=50GB").WithPermissions(userID, groupID).WithLabels(Simple),
 
 	// External Computes
 	MakeTest("Lustre External", "#DW jobdw type=lustre name=lustre capacity=50GB").WithExternalComputes().WithLabels(ExternalLustre),
