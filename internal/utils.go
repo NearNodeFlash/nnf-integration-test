@@ -430,6 +430,11 @@ func VerifyClientMountPermissions(ctx context.Context, k8sClient client.Client, 
 		return
 	}
 
+	// Only jobdw and persistentdw produce ClientMounts; container-only workflows have none.
+	if !hasDirective(workflow, "jobdw") && !hasDirective(workflow, "persistentdw") {
+		return
+	}
+
 	By(fmt.Sprintf("Verifying ClientMounts carry UID=%d GID=%d", workflow.Spec.UserID, workflow.Spec.GroupID))
 
 	clientMounts := &dwsv1alpha7.ClientMountList{}
@@ -443,4 +448,14 @@ func VerifyClientMountPermissions(ctx context.Context, k8sClient client.Client, 
 			Expect(mount.GroupID).To(Equal(workflow.Spec.GroupID), where)
 		}
 	}
+}
+
+func hasDirective(workflow *dwsv1alpha7.Workflow, command string) bool {
+	for _, directive := range workflow.Spec.DWDirectives {
+		args, _ := dwdparse.BuildArgsMap(directive)
+		if args["command"] == command {
+			return true
+		}
+	}
+	return false
 }
